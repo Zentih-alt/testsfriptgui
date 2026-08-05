@@ -254,6 +254,7 @@ function Solar.CreateWindow(config)
     contentArea.Size = UDim2.new(1, -SIDEBAR_W, 1, -GROUPY_BAR_H)
     contentArea.Position = UDim2.new(0, SIDEBAR_W, 0, GROUPY_BAR_H)
     contentArea.BackgroundTransparency = 1
+    contentArea.ClipsDescendants = false
     contentArea.Parent = main
 
     local headerTitle = Instance.new("TextLabel")
@@ -272,6 +273,7 @@ function Solar.CreateWindow(config)
     pagesContainer.Size = UDim2.new(1, 0, 1, -TOPBAR_H)
     pagesContainer.Position = UDim2.new(0, 0, 0, TOPBAR_H)
     pagesContainer.BackgroundTransparency = 1
+    pagesContainer.ClipsDescendants = false
     pagesContainer.Parent = contentArea
 
     -- Dragging System
@@ -287,6 +289,7 @@ function Solar.CreateWindow(config)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            if activeCloseDropdown then activeCloseDropdown() activeCloseDropdown = nil end
         end
     end)
     UIS.InputEnded:Connect(function(input)
@@ -385,6 +388,7 @@ function Solar.CreateWindow(config)
         pageScroll.BorderSizePixel = 0
         pageScroll.ScrollBarThickness = 3
         pageScroll.ScrollBarImageColor3 = Theme.CardBorder
+        pageScroll.ClipsDescendants = false
         pageScroll.Visible = false
         pageScroll.Parent = pagesContainer
 
@@ -451,6 +455,7 @@ function Solar.CreateWindow(config)
             local card = Instance.new("Frame")
             card.Size = UDim2.new(1, 0, 0, height or 52)
             card.BackgroundColor3 = Theme.CardBG
+            card.ClipsDescendants = false
             card.Parent = pageScroll
             Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
             local stroke = Instance.new("UIStroke")
@@ -474,7 +479,7 @@ function Solar.CreateWindow(config)
         end
 
         -- =========================================================================
-        -- DROPDOWN ENGINE (ปรับแต่งระบบเปิดลอย เลือก และแสดงผลตามวงสีเขียว 100%)
+        -- DROPDOWN ENGINE (ปรับให้เปิดขยายขึ้นด้านบน ตามวงสีเขียวในรูปภาพ)
         -- =========================================================================
         function TabAPI:AddDropdown(title, desc, options, default, callback, flag)
             local card = createCard(48)
@@ -521,18 +526,20 @@ function Solar.CreateWindow(config)
             arrowIcon.Size = UDim2.new(0, 16, 1, 0)
             arrowIcon.Position = UDim2.new(1, -18, 0, 0)
             arrowIcon.BackgroundTransparency = 1
-            arrowIcon.Text = "▼"
+            arrowIcon.Text = "▲"
             arrowIcon.TextColor3 = Theme.TextSecondary
             arrowIcon.TextSize = 9
             arrowIcon.Parent = box
 
+            local listHeight = math.min(#options, 5) * 32 + 8
+
             -- Dropdown Popup Container
             local dropList = Instance.new("Frame")
             dropList.Name = "DropdownList"
-            dropList.Size = UDim2.new(0, 150, 0, math.min(#options, 5) * 32 + 8)
+            dropList.Size = UDim2.new(0, 150, 0, listHeight)
             dropList.BackgroundColor3 = Theme.CardBG
             dropList.Visible = false
-            dropList.ZIndex = 99999
+            dropList.ZIndex = 100000
             dropList.Parent = sg
             Instance.new("UICorner", dropList).CornerRadius = UDim.new(0, 6)
             local listStroke = Instance.new("UIStroke")
@@ -550,7 +557,7 @@ function Solar.CreateWindow(config)
             dropShadow.ImageTransparency = 0.8
             dropShadow.ScaleType = Enum.ScaleType.Slice
             dropShadow.SliceCenter = Rect.new(23, 23, 277, 277)
-            dropShadow.ZIndex = 99998
+            dropShadow.ZIndex = 99999
             dropShadow.Parent = dropList
 
             local listScroll = Instance.new("ScrollingFrame")
@@ -561,7 +568,7 @@ function Solar.CreateWindow(config)
             listScroll.ScrollBarThickness = 2
             listScroll.ScrollBarImageColor3 = Theme.CardBorder
             listScroll.CanvasSize = UDim2.new(0, 0, 0, #options * 32)
-            listScroll.ZIndex = 100000
+            listScroll.ZIndex = 100001
             listScroll.Parent = dropList
 
             local listLayout = Instance.new("UIListLayout")
@@ -601,7 +608,7 @@ function Solar.CreateWindow(config)
                 optBtn.BackgroundColor3 = Theme.CardBG
                 optBtn.Text = ""
                 optBtn.AutoButtonColor = false
-                optBtn.ZIndex = 100001
+                optBtn.ZIndex = 100002
                 optBtn.Parent = listScroll
                 Instance.new("UICorner", optBtn).CornerRadius = UDim.new(0, 4)
 
@@ -614,7 +621,7 @@ function Solar.CreateWindow(config)
                 optLbl.TextColor3 = Theme.TextPrimary
                 optLbl.Font = Enum.Font.Gotham
                 optLbl.TextXAlignment = Enum.TextXAlignment.Left
-                optLbl.ZIndex = 100002
+                optLbl.ZIndex = 100003
                 optLbl.Parent = optBtn
 
                 local checkIcon = Instance.new("TextLabel")
@@ -626,7 +633,7 @@ function Solar.CreateWindow(config)
                 checkIcon.TextColor3 = Theme.Accent
                 checkIcon.Font = Enum.Font.GothamBold
                 checkIcon.Visible = (opt == selected)
-                checkIcon.ZIndex = 100002
+                checkIcon.ZIndex = 100003
                 checkIcon.Parent = optBtn
 
                 optionBtns[opt] = { Btn = optBtn, Lbl = optLbl, Check = checkIcon }
@@ -658,7 +665,8 @@ function Solar.CreateWindow(config)
                 if open then
                     if activeCloseDropdown then activeCloseDropdown() end
                     local abs = box.AbsolutePosition
-                    dropList.Position = UDim2.new(0, abs.X, 0, abs.Y + box.AbsoluteSize.Y + 4)
+                    -- คำนวณให้รายการเด้งขึ้นด้านบน
+                    dropList.Position = UDim2.new(0, abs.X, 0, abs.Y - listHeight - 4)
                     dropList.Visible = true
                     tw(arrowIcon, {Rotation = 180}, 0.15)
                     tw(boxStroke, {Color = Theme.Accent}, 0.15)
@@ -710,8 +718,8 @@ function Solar.CreateWindow(config)
             end
 
             local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(0, 105, 0, 30)
-            btn.Position = UDim2.new(1, -119, 0.5, -15)
+            btn.Size = UDim2.new(0, 95, 0, 30)
+            btn.Position = UDim2.new(1, -109, 0.5, -15)
             btn.BackgroundColor3 = Theme.Accent
             btn.Text = "Execute"
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
