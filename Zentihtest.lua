@@ -1,7 +1,7 @@
 --[[
 ================================================================================
-  SolarV2.lua — Windows 11 Fluent UI Library for Roblox Executors
-  Design inspired by Windows 11 / WinUI 3 Modern Desktop Application
+  SolarV2.lua — Windows 11 Stardock Groupy 2 Exact Light Theme UI Library
+  Designed strictly based on Windows 11 / Stardock Groupy UI Design Reference
 ================================================================================
 ]]
 
@@ -14,59 +14,42 @@ local function tw(obj, props, duration, easingStyle, easingDir)
     pcall(function()
         TweenService:Create(
             obj,
-            TweenInfo.new(duration or 0.2, easingStyle or Enum.EasingStyle.Quint, easingDir or Enum.EasingDirection.Out),
+            TweenInfo.new(duration or 0.18, easingStyle or Enum.EasingStyle.Quint, easingDir or Enum.EasingDirection.Out),
             props
         ):Play()
     end)
 end
 
-local Themes = {
-    ["Win11Dark"] = {
-        BG = Color3.fromRGB(32, 32, 36),
-        Sidebar = Color3.fromRGB(26, 26, 29),
-        Card = Color3.fromRGB(42, 42, 48),
-        CardHover = Color3.fromRGB(50, 50, 58),
-        Border = Color3.fromRGB(60, 60, 70),
-        Text = Color3.fromRGB(245, 245, 250),
-        SubText = Color3.fromRGB(160, 160, 175),
-        Accent = Color3.fromRGB(0, 120, 212), -- Windows 11 Accent Blue
-        AccentHover = Color3.fromRGB(24, 138, 226),
-        ToggleOff = Color3.fromRGB(70, 70, 82),
-        DotRed = Color3.fromRGB(232, 17, 35),
-        DotGreen = Color3.fromRGB(16, 124, 65)
-    },
-    ["Win11Light"] = {
-        BG = Color3.fromRGB(243, 243, 243),
-        Sidebar = Color3.fromRGB(230, 230, 235),
-        Card = Color3.fromRGB(255, 255, 255),
-        CardHover = Color3.fromRGB(245, 245, 250),
-        Border = Color3.fromRGB(215, 215, 225),
-        Text = Color3.fromRGB(30, 30, 35),
-        SubText = Color3.fromRGB(100, 100, 115),
-        Accent = Color3.fromRGB(0, 120, 212),
-        AccentHover = Color3.fromRGB(24, 138, 226),
-        ToggleOff = Color3.fromRGB(200, 200, 210),
-        DotRed = Color3.fromRGB(232, 17, 35),
-        DotGreen = Color3.fromRGB(16, 124, 65)
-    }
+-- โทนสีและสไตล์ตรงตามรูปภาพ
+local Theme = {
+    MainBG = Color3.fromRGB(243, 243, 243),
+    SidebarBG = Color3.fromRGB(238, 238, 242),
+    GroupyHeaderBG = Color3.fromRGB(232, 224, 236), -- สีแท็บแอปด้านบนสุดสไตล์ Groupy 2
+    GroupyTabActive = Color3.fromRGB(255, 255, 255),
+    GroupyTabInactive = Color3.fromRGB(222, 214, 226),
+    CardBG = Color3.fromRGB(255, 255, 255),
+    CardBorder = Color3.fromRGB(225, 225, 230),
+    CardHover = Color3.fromRGB(250, 250, 254),
+    TextPrimary = Color3.fromRGB(26, 26, 26),
+    TextSecondary = Color3.fromRGB(110, 110, 120),
+    Accent = Color3.fromRGB(0, 95, 184), -- Windows 11 Blue Accent
+    AccentHover = Color3.fromRGB(24, 115, 204),
+    ToggleOff = Color3.fromRGB(15, 108, 189), -- สีปุ่ม Toggle On/Off แบบในรูป
+    WindowControlsRed = Color3.fromRGB(232, 17, 35)
 }
 
 local Solar = {}
-Solar.Themes = Themes
 
 function Solar.CreateWindow(config)
     config = config or {}
-    local TitleText = config.Title or "Windows 11 Settings"
-    local SubText = config.Subtitle or "Solar UI Library V2"
-    local CurrentTheme = Themes[config.Theme] or Themes["Win11Dark"]
-    local ToggleIcon = config.ToggleIcon or "rbxassetid://10723415903"
+    local TitleText = config.Title or "Tab appearance"
+    local SubtitleText = config.Subtitle or "What style tabs would you like to use for tabs?"
 
-    -- Clean old GUI
-    local oldUI = CoreGui:FindFirstChild("SolarV2_Engine") or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("SolarV2_Engine")
+    local oldUI = CoreGui:FindFirstChild("SolarV2_Win11") or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("SolarV2_Win11")
     if oldUI then oldUI:Destroy() end
 
     local sg = Instance.new("ScreenGui")
-    sg.Name = "SolarV2_Engine"
+    sg.Name = "SolarV2_Win11"
     sg.ResetOnSpawn = false
     sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -80,93 +63,172 @@ function Solar.CreateWindow(config)
         if not sg.Parent then sg.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
     end
 
-    local WIN_W, WIN_H = 820, 560
-    local SIDEBAR_W = 200
-    local TOPBAR_H = 48
+    local WIN_W, WIN_H = 860, 580
+    local SIDEBAR_W = 210
+    local GROUPY_BAR_H = 34
+    local TOPBAR_H = 46
 
     local uiVisible = true
-    local activeDropdownClose = nil
+    local activeCloseCallback = nil
 
+    -- Main Window Frame
     local main = Instance.new("Frame")
-    main.Name = "MainFrame"
+    main.Name = "MainWindow"
     main.AnchorPoint = Vector2.new(0.5, 0.5)
     main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
     main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    main.BackgroundColor3 = CurrentTheme.BG
+    main.BackgroundColor3 = Theme.MainBG
     main.BorderSizePixel = 0
     main.ClipsDescendants = false
     main.Active = true
     main.Parent = sg
 
     local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 10)
+    mainCorner.CornerRadius = UDim.new(0, 8)
     mainCorner.Parent = main
 
     local mainStroke = Instance.new("UIStroke")
-    mainStroke.Color = CurrentTheme.Border
+    mainStroke.Color = Theme.CardBorder
     mainStroke.Thickness = 1
     mainStroke.Parent = main
 
-    -- Responsive UI Scale
+    -- Responsive Scale Engine
     local uiScale = Instance.new("UIScale")
     uiScale.Parent = main
 
     local function updateScale()
         local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
         local scale = math.min((vp.X - 30) / WIN_W, (vp.Y - 30) / WIN_H)
-        uiScale.Scale = math.clamp(scale, 0.6, 1.0)
+        uiScale.Scale = math.clamp(scale, 0.55, 1.0)
     end
     updateScale()
     if workspace.CurrentCamera then
         workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
     end
 
-    -- Sidebar
+    -- 1. GROUPY 2 TOP APP TAB BAR (แถบแท็บแอปด้านบนสุดแบบในรูป)
+    local groupyBar = Instance.new("Frame")
+    groupyBar.Name = "GroupyBar"
+    groupyBar.Size = UDim2.new(1, 0, 0, GROUPY_BAR_H)
+    groupyBar.BackgroundColor3 = Theme.GroupyHeaderBG
+    groupyBar.BorderSizePixel = 0
+    groupyBar.Parent = main
+
+    local groupyCorner = Instance.new("UICorner")
+    groupyCorner.CornerRadius = UDim.new(0, 8)
+    groupyCorner.Parent = groupyBar
+
+    -- Fix Bottom Round Corner for Groupy Bar
+    local groupyFix = Instance.new("Frame")
+    groupyFix.Size = UDim2.new(1, 0, 0, 10)
+    groupyFix.Position = UDim2.new(0, 0, 1, -10)
+    groupyFix.BackgroundColor3 = Theme.GroupyHeaderBG
+    groupyFix.BorderSizePixel = 0
+    groupyFix.Parent = groupyBar
+
+    -- Groupy Tab Item 1 (Active Tab)
+    local gTab1 = Instance.new("Frame")
+    gTab1.Size = UDim2.new(0, 180, 0, 26)
+    gTab1.Position = UDim2.new(0, 32, 0, 4)
+    gTab1.BackgroundColor3 = Theme.GroupyTabActive
+    gTab1.Parent = groupyBar
+    Instance.new("UICorner", gTab1).CornerRadius = UDim.new(0, 5)
+
+    local gTab1Lbl = Instance.new("TextLabel")
+    gTab1Lbl.Size = UDim2.new(1, -26, 1, 0)
+    gTab1Lbl.Position = UDim2.new(0, 8, 0, 0)
+    gTab1Lbl.BackgroundTransparency = 1
+    gTab1Lbl.Text = "Stardock Groupy 2 Co..."
+    gTab1Lbl.TextSize = 11
+    gTab1Lbl.TextColor3 = Theme.TextPrimary
+    gTab1Lbl.Font = Enum.Font.Gotham
+    gTab1Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    gTab1Lbl.TextTruncate = Enum.TextTruncate.AtEnd
+    gTab1Lbl.Parent = gTab1
+
+    local gTab1Close = Instance.new("TextLabel")
+    gTab1Close.Size = UDim2.new(0, 16, 0, 16)
+    gTab1Close.Position = UDim2.new(1, -20, 0.5, -8)
+    gTab1Close.BackgroundTransparency = 1
+    gTab1Close.Text = "✕"
+    gTab1Close.TextSize = 10
+    gTab1Close.TextColor3 = Theme.TextSecondary
+    gTab1Close.Parent = gTab1
+
+    -- Groupy Tab Item 2 (Inactive Tab)
+    local gTab2 = Instance.new("Frame")
+    gTab2.Size = UDim2.new(0, 160, 0, 26)
+    gTab2.Position = UDim2.new(0, 216, 0, 4)
+    gTab2.BackgroundColor3 = Theme.GroupyTabInactive
+    gTab2.Parent = groupyBar
+    Instance.new("UICorner", gTab2).CornerRadius = UDim.new(0, 5)
+
+    local gTab2Lbl = Instance.new("TextLabel")
+    gTab2Lbl.Size = UDim2.new(1, -12, 1, 0)
+    gTab2Lbl.Position = UDim2.new(0, 8, 0, 0)
+    gTab2Lbl.BackgroundTransparency = 1
+    gTab2Lbl.Text = "Stardock Start11 Configur..."
+    gTab2Lbl.TextSize = 11
+    gTab2Lbl.TextColor3 = Theme.TextSecondary
+    gTab2Lbl.Font = Enum.Font.Gotham
+    gTab2Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    gTab2Lbl.TextTruncate = Enum.TextTruncate.AtEnd
+    gTab2Lbl.Parent = gTab2
+
+    -- Windows 11 Native Controls (- □ ✕) ชิดขวาบนสุด
+    local winControls = Instance.new("Frame")
+    winControls.Size = UDim2.new(0, 100, 1, 0)
+    winControls.Position = UDim2.new(1, -100, 0, 0)
+    winControls.BackgroundTransparency = 1
+    winControls.Parent = groupyBar
+
+    local winMin = Instance.new("TextButton")
+    winMin.Size = UDim2.new(0, 30, 1, 0)
+    winMin.Position = UDim2.new(0, 0, 0, 0)
+    winMin.BackgroundTransparency = 1
+    winMin.Text = "─"
+    winMin.TextSize = 10
+    winMin.TextColor3 = Theme.TextPrimary
+    winMin.Parent = winControls
+
+    local winMax = Instance.new("TextButton")
+    winMax.Size = UDim2.new(0, 30, 1, 0)
+    winMax.Position = UDim2.new(0, 30, 0, 0)
+    winMax.BackgroundTransparency = 1
+    winMax.Text = "▢"
+    winMax.TextSize = 11
+    winMax.TextColor3 = Theme.TextPrimary
+    winMax.Parent = winControls
+
+    local winClose = Instance.new("TextButton")
+    winClose.Size = UDim2.new(0, 40, 1, 0)
+    winClose.Position = UDim2.new(0, 60, 0, 0)
+    winClose.BackgroundTransparency = 1
+    winClose.Text = "✕"
+    winClose.TextSize = 12
+    winClose.TextColor3 = Theme.TextPrimary
+    winClose.Parent = winControls
+
+    -- 2. SIDEBAR NAVIGATION (เมนูด้านซ้าย)
     local sidebar = Instance.new("Frame")
     sidebar.Name = "Sidebar"
-    sidebar.Size = UDim2.new(0, SIDEBAR_W, 1, 0)
-    sidebar.BackgroundColor3 = CurrentTheme.Sidebar
+    sidebar.Size = UDim2.new(0, SIDEBAR_W, 1, -GROUPY_BAR_H)
+    sidebar.Position = UDim2.new(0, 0, 0, GROUPY_BAR_H)
+    sidebar.BackgroundColor3 = Theme.SidebarBG
     sidebar.BorderSizePixel = 0
     sidebar.Parent = main
 
-    local sidebarCorner = Instance.new("UICorner")
-    sidebarCorner.CornerRadius = UDim.new(0, 10)
-    sidebarCorner.Parent = sidebar
-
-    local headerWrap = Instance.new("Frame")
-    headerWrap.Size = UDim2.new(1, 0, 0, TOPBAR_H + 12)
-    headerWrap.BackgroundTransparency = 1
-    headerWrap.Parent = sidebar
-
-    local titleLbl = Instance.new("TextLabel")
-    titleLbl.Size = UDim2.new(1, -24, 0, 20)
-    titleLbl.Position = UDim2.new(0, 16, 0, 12)
-    titleLbl.BackgroundTransparency = 1
-    titleLbl.Text = TitleText
-    titleLbl.TextSize = 15
-    titleLbl.TextColor3 = CurrentTheme.Text
-    titleLbl.Font = Enum.Font.GothamBold
-    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-    titleLbl.Parent = headerWrap
-
-    local subLbl = Instance.new("TextLabel")
-    subLbl.Size = UDim2.new(1, -24, 0, 14)
-    subLbl.Position = UDim2.new(0, 16, 0, 32)
-    subLbl.BackgroundTransparency = 1
-    subLbl.Text = SubText
-    subLbl.TextSize = 11
-    subLbl.TextColor3 = CurrentTheme.SubText
-    subLbl.Font = Enum.Font.Gotham
-    subLbl.TextXAlignment = Enum.TextXAlignment.Left
-    subLbl.Parent = headerWrap
+    local sbCorner = Instance.new("UICorner")
+    sbCorner.CornerRadius = UDim.new(0, 8)
+    sbCorner.Parent = sidebar
 
     local navScroll = Instance.new("ScrollingFrame")
-    navScroll.Size = UDim2.new(1, 0, 1, -(TOPBAR_H + 20))
-    navScroll.Position = UDim2.new(0, 0, 0, TOPBAR_H + 16)
+    navScroll.Size = UDim2.new(1, 0, 1, -20)
+    navScroll.Position = UDim2.new(0, 0, 0, 10)
     navScroll.BackgroundTransparency = 1
     navScroll.BorderSizePixel = 0
     navScroll.ScrollBarThickness = 2
-    navScroll.ScrollBarImageColor3 = CurrentTheme.Border
+    navScroll.ScrollBarImageColor3 = Theme.CardBorder
     navScroll.Parent = sidebar
 
     local navLayout = Instance.new("UIListLayout")
@@ -179,50 +241,42 @@ function Solar.CreateWindow(config)
     navPad.PaddingRight = UDim.new(0, 10)
     navPad.Parent = navScroll
 
-    -- Content Area
+    -- 3. CONTENT AREA
     local contentArea = Instance.new("Frame")
     contentArea.Name = "ContentArea"
-    contentArea.Size = UDim2.new(1, -SIDEBAR_W, 1, 0)
-    contentArea.Position = UDim2.new(0, SIDEBAR_W, 0, 0)
+    contentArea.Size = UDim2.new(1, -SIDEBAR_W, 1, -GROUPY_BAR_H)
+    contentArea.Position = UDim2.new(0, SIDEBAR_W, 0, GROUPY_BAR_H)
     contentArea.BackgroundTransparency = 1
     contentArea.Parent = main
 
-    -- Top Window Bar
-    local topBar = Instance.new("Frame")
-    topBar.Name = "TopBar"
-    topBar.Size = UDim2.new(1, 0, 0, TOPBAR_H)
-    topBar.BackgroundTransparency = 1
-    topBar.Parent = contentArea
+    -- Top Header Bar (Back Arrow + Title)
+    local topHeader = Instance.new("Frame")
+    topHeader.Size = UDim2.new(1, 0, 0, TOPBAR_H)
+    topHeader.BackgroundTransparency = 1
+    topHeader.Parent = contentArea
 
-    local pageHeader = Instance.new("TextLabel")
-    pageHeader.Size = UDim2.new(0.6, 0, 1, 0)
-    pageHeader.Position = UDim2.new(0, 20, 0, 0)
-    pageHeader.BackgroundTransparency = 1
-    pageHeader.Text = "Dashboard"
-    pageHeader.TextSize = 18
-    pageHeader.TextColor3 = CurrentTheme.Text
-    pageHeader.Font = Enum.Font.GothamBold
-    pageHeader.TextXAlignment = Enum.TextXAlignment.Left
-    pageHeader.Parent = topBar
+    local backBtn = Instance.new("TextButton")
+    backBtn.Size = UDim2.new(0, 28, 0, 28)
+    backBtn.Position = UDim2.new(0, 18, 0.5, -14)
+    backBtn.BackgroundTransparency = 1
+    backBtn.Text = "←"
+    backBtn.TextSize = 18
+    backBtn.TextColor3 = Theme.TextPrimary
+    backBtn.Font = Enum.Font.GothamMedium
+    backBtn.Parent = topHeader
 
-    -- Window Controls (Min/Close)
-    local minBtn = Instance.new("TextButton")
-    minBtn.Size = UDim2.new(0, 12, 0, 12)
-    minBtn.Position = UDim2.new(1, -40, 0, 18)
-    minBtn.BackgroundColor3 = Color3.fromRGB(245, 189, 2)
-    minBtn.Text = ""
-    minBtn.Parent = topBar
-    Instance.new("UICorner", minBtn).CornerRadius = UDim.new(1, 0)
+    local headerTitle = Instance.new("TextLabel")
+    headerTitle.Size = UDim2.new(1, -60, 1, 0)
+    headerTitle.Position = UDim2.new(0, 52, 0, 0)
+    headerTitle.BackgroundTransparency = 1
+    headerTitle.Text = TitleText
+    headerTitle.TextSize = 20
+    headerTitle.TextColor3 = Theme.TextPrimary
+    headerTitle.Font = Enum.Font.GothamBold
+    headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+    headerTitle.Parent = topHeader
 
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 12, 0, 12)
-    closeBtn.Position = UDim2.new(1, -20, 0, 18)
-    closeBtn.BackgroundColor3 = CurrentTheme.DotRed
-    closeBtn.Text = ""
-    closeBtn.Parent = topBar
-    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(1, 0)
-
-    -- Container Frame for Pages
+    -- Page Container
     local pagesContainer = Instance.new("Frame")
     pagesContainer.Name = "PagesContainer"
     pagesContainer.Size = UDim2.new(1, 0, 1, -TOPBAR_H)
@@ -230,20 +284,15 @@ function Solar.CreateWindow(config)
     pagesContainer.BackgroundTransparency = 1
     pagesContainer.Parent = contentArea
 
-    -- Dragging Logic
+    -- Dragging System
     local dragging, dragStart, startPos
-    local function enableDrag(frame)
-        frame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                dragStart = input.Position
-                startPos = main.Position
-            end
-        end)
-    end
-    enableDrag(topBar)
-    enableDrag(sidebar)
-
+    groupyBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = main.Position
+        end
+    end)
     UIS.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
@@ -256,88 +305,82 @@ function Solar.CreateWindow(config)
         end
     end)
 
-    -- Floating Toggle Button
-    local floatToggle = Instance.new("ImageButton")
-    floatToggle.Name = "FloatToggle"
-    floatToggle.Size = UDim2.new(0, 50, 0, 50)
-    floatToggle.Position = UDim2.new(0, 20, 0.5, -25)
-    floatToggle.BackgroundColor3 = CurrentTheme.Sidebar
-    floatToggle.Image = ToggleIcon
-    floatToggle.ZIndex = 999
-    floatToggle.Parent = sg
-    Instance.new("UICorner", floatToggle).CornerRadius = UDim.new(0, 12)
-    local floatStroke = Instance.new("UIStroke")
-    floatStroke.Color = CurrentTheme.Border
-    floatStroke.Parent = floatToggle
-
     local function toggleUI()
         uiVisible = not uiVisible
-        if activeDropdownClose then activeDropdownClose() activeDropdownClose = nil end
         if uiVisible then
             main.Visible = true
-            tw(main, {Size = UDim2.new(0, WIN_W, 0, WIN_H)}, 0.25)
+            tw(main, {Size = UDim2.new(0, WIN_W, 0, WIN_H)}, 0.22)
         else
-            tw(main, {Size = UDim2.new(0, 0, 0, 0)}, 0.2)
-            task.delay(0.2, function() main.Visible = false end)
+            tw(main, {Size = UDim2.new(0, 0, 0, 0)}, 0.18)
+            task.delay(0.18, function() main.Visible = false end)
         end
     end
 
-    minBtn.MouseButton1Click:Connect(toggleUI)
-    closeBtn.MouseButton1Click:Connect(toggleUI)
-    floatToggle.MouseButton1Click:Connect(toggleUI)
+    winMin.MouseButton1Click:Connect(toggleUI)
+    winClose.MouseButton1Click:Connect(toggleUI)
 
-    -- Window API & Tabs Setup
+    -- Window API & Tab Logic
     local WindowAPI = { Flags = {} }
     local tabsList = {}
     local currentTab = nil
 
-    function WindowAPI.AddTab(tabName, iconId)
+    function WindowAPI.AddTab(tabName, iconSymbol)
         local tabBtn = Instance.new("TextButton")
         tabBtn.Size = UDim2.new(1, 0, 0, 36)
-        tabBtn.BackgroundColor3 = CurrentTheme.Sidebar
+        tabBtn.BackgroundColor3 = Theme.CardBG
         tabBtn.BackgroundTransparency = 1
         tabBtn.Text = ""
         tabBtn.Parent = navScroll
-        Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 5)
 
-        local pillIndicator = Instance.new("Frame")
-        pillIndicator.Size = UDim2.new(0, 3, 0, 18)
-        pillIndicator.Position = UDim2.new(0, 2, 0.5, -9)
-        pillIndicator.BackgroundColor3 = CurrentTheme.Accent
-        pillIndicator.BackgroundTransparency = 1
-        pillIndicator.Parent = tabBtn
-        Instance.new("UICorner", pillIndicator).CornerRadius = UDim.new(1, 0)
+        -- Blue Pill Accent Bar for Active Tab
+        local activePill = Instance.new("Frame")
+        activePill.Size = UDim2.new(0, 3, 0, 18)
+        activePill.Position = UDim2.new(0, 3, 0.5, -9)
+        activePill.BackgroundColor3 = Theme.Accent
+        activePill.BackgroundTransparency = 1
+        activePill.Parent = tabBtn
+        Instance.new("UICorner", activePill).CornerRadius = UDim.new(1, 0)
 
-        local tabLabel = Instance.new("TextLabel")
-        tabLabel.Size = UDim2.new(1, -30, 1, 0)
-        tabLabel.Position = UDim2.new(0, 26, 0, 0)
-        tabLabel.BackgroundTransparency = 1
-        tabLabel.Text = tabName
-        tabLabel.TextSize = 13
-        tabLabel.TextColor3 = CurrentTheme.SubText
-        tabLabel.Font = Enum.Font.GothamMedium
-        tabLabel.TextXAlignment = Enum.TextXAlignment.Left
-        tabLabel.Parent = tabBtn
+        local tabIcon = Instance.new("TextLabel")
+        tabIcon.Size = UDim2.new(0, 20, 1, 0)
+        tabIcon.Position = UDim2.new(0, 12, 0, 0)
+        tabIcon.BackgroundTransparency = 1
+        tabIcon.Text = iconSymbol or "🗔"
+        tabIcon.TextSize = 13
+        tabIcon.TextColor3 = Theme.TextSecondary
+        tabIcon.Parent = tabBtn
+
+        local tabLbl = Instance.new("TextLabel")
+        tabLbl.Size = UDim2.new(1, -40, 1, 0)
+        tabLbl.Position = UDim2.new(0, 36, 0, 0)
+        tabLbl.BackgroundTransparency = 1
+        tabLbl.Text = tabName
+        tabLbl.TextSize = 13
+        tabLbl.TextColor3 = Theme.TextSecondary
+        tabLbl.Font = Enum.Font.GothamMedium
+        tabLbl.TextXAlignment = Enum.TextXAlignment.Left
+        tabLbl.Parent = tabBtn
 
         local pageScroll = Instance.new("ScrollingFrame")
         pageScroll.Size = UDim2.new(1, 0, 1, 0)
         pageScroll.BackgroundTransparency = 1
         pageScroll.BorderSizePixel = 0
-        pageScroll.ScrollBarThickness = 3
-        pageScroll.ScrollBarImageColor3 = CurrentTheme.Border
+        pageScroll.ScrollBarThickness = 4
+        pageScroll.ScrollBarImageColor3 = Theme.CardBorder
         pageScroll.Visible = false
         pageScroll.Parent = pagesContainer
 
         local pageLayout = Instance.new("UIListLayout")
         pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        pageLayout.Padding = UDim.new(0, 10)
+        pageLayout.Padding = UDim.new(0, 14)
         pageLayout.Parent = pageScroll
 
         local pagePad = Instance.new("UIPadding")
         pagePad.PaddingLeft = UDim.new(0, 20)
-        pagePad.PaddingRight = UDim.new(0, 20)
-        pagePad.PaddingTop = UDim.new(0, 10)
-        pagePad.PaddingBottom = UDim.new(0, 20)
+        pagePad.PaddingRight = UDim.new(0, 24)
+        pagePad.PaddingTop = UDim.new(0, 4)
+        pagePad.PaddingBottom = UDim.new(0, 24)
         pagePad.Parent = pageScroll
 
         pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -346,390 +389,267 @@ function Solar.CreateWindow(config)
 
         local TabAPI = {}
 
-        local function activateTab()
-            if activeDropdownClose then activeDropdownClose() activeDropdownClose = nil end
+        local function activate()
             for _, t in ipairs(tabsList) do
                 t.Page.Visible = false
                 tw(t.Pill, {BackgroundTransparency = 1}, 0.15)
-                tw(t.Label, {TextColor3 = CurrentTheme.SubText}, 0.15)
+                tw(t.Label, {TextColor3 = Theme.TextSecondary}, 0.15)
+                tw(t.Icon, {TextColor3 = Theme.TextSecondary}, 0.15)
                 tw(t.Btn, {BackgroundTransparency = 1}, 0.15)
             end
             pageScroll.Visible = true
-            pageHeader.Text = tabName
-            tw(pillIndicator, {BackgroundTransparency = 0}, 0.15)
-            tw(tabLabel, {TextColor3 = CurrentTheme.Text}, 0.15)
-            tw(tabBtn, {BackgroundTransparency = 0.8, BackgroundColor3 = CurrentTheme.Card}, 0.15)
+            headerTitle.Text = tabName
+            tw(activePill, {BackgroundTransparency = 0}, 0.15)
+            tw(tabLbl, {TextColor3 = Theme.TextPrimary}, 0.15)
+            tw(tabIcon, {TextColor3 = Theme.Accent}, 0.15)
+            tw(tabBtn, {BackgroundTransparency = 0.6, BackgroundColor3 = Theme.CardBG}, 0.15)
             currentTab = TabAPI
         end
 
-        tabBtn.MouseButton1Click:Connect(activateTab)
+        tabBtn.MouseButton1Click:Connect(activate)
+        table.insert(tabsList, { Btn = tabBtn, Pill = activePill, Label = tabLbl, Icon = tabIcon, Page = pageScroll })
 
-        table.insert(tabsList, { Btn = tabBtn, Pill = pillIndicator, Label = tabLabel, Page = pageScroll })
-        if #tabsList == 1 then activateTab() end
+        if #tabsList == 1 then activate() end
 
-        -- Helper to create Win11 Standard Cards
-        local function createCard(height)
-            local card = Instance.new("Frame")
-            card.Size = UDim2.new(1, 0, 0, height or 48)
-            card.BackgroundColor3 = CurrentTheme.Card
-            card.Parent = pageScroll
-            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
-            local stroke = Instance.new("UIStroke")
-            stroke.Color = CurrentTheme.Border
-            stroke.Thickness = 1
-            stroke.Parent = card
-            return card, stroke
-        end
+        -- 1. ADD GRID CARD SELECTOR (สร้างการ์ดพรีวิวด้วย Pure UI Elements ตรงตามรูปภาพเป๊ะๆ)
+        function TabAPI:AddGridSelect(titleText, optionsList, defaultIdx, callback)
+            local sectionWrap = Instance.new("Frame")
+            sectionWrap.Size = UDim2.new(1, 0, 0, 0)
+            sectionWrap.AutomaticSize = Enum.AutomaticSize.Y
+            sectionWrap.BackgroundTransparency = 1
+            sectionWrap.Parent = pageScroll
 
-        local function injectText(card, title, desc)
-            local tLbl = Instance.new("TextLabel")
-            tLbl.Size = UDim2.new(0.6, 0, 0, desc and 18 or 0)
-            tLbl.Position = UDim2.new(0, 14, 0.5, desc and -16 or 0)
-            if not desc then tLbl.Size = UDim2.new(0.6, 0, 1, 0) tLbl.Position = UDim2.new(0, 14, 0, 0) end
-            tLbl.BackgroundTransparency = 1
-            tLbl.Text = title
-            tLbl.TextSize = 13
-            tLbl.TextColor3 = CurrentTheme.Text
-            tLbl.Font = Enum.Font.GothamMedium
-            tLbl.TextXAlignment = Enum.TextXAlignment.Left
-            tLbl.Parent = card
+            local sTitle = Instance.new("TextLabel")
+            sTitle.Size = UDim2.new(1, 0, 0, 22)
+            sTitle.BackgroundTransparency = 1
+            sTitle.Text = titleText
+            sTitle.TextSize = 13
+            sTitle.TextColor3 = Theme.TextPrimary
+            sTitle.Font = Enum.Font.GothamMedium
+            sTitle.TextXAlignment = Enum.TextXAlignment.Left
+            sTitle.Parent = sectionWrap
 
-            if desc then
-                local dLbl = Instance.new("TextLabel")
-                dLbl.Size = UDim2.new(0.6, 0, 0, 14)
-                dLbl.Position = UDim2.new(0, 14, 0.5, 2)
-                dLbl.BackgroundTransparency = 1
-                dLbl.Text = desc
-                dLbl.TextSize = 11
-                dLbl.TextColor3 = CurrentTheme.SubText
-                dLbl.Font = Enum.Font.Gotham
-                dLbl.TextXAlignment = Enum.TextXAlignment.Left
-                dLbl.Parent = card
-            end
-        end
-
-        -- SECTION
-        function TabAPI:AddSection(text)
-            local secLbl = Instance.new("TextLabel")
-            secLbl.Size = UDim2.new(1, 0, 0, 24)
-            secLbl.BackgroundTransparency = 1
-            secLbl.Text = text
-            secLbl.TextSize = 12
-            secLbl.TextColor3 = CurrentTheme.Accent
-            secLbl.Font = Enum.Font.GothamBold
-            secLbl.TextXAlignment = Enum.TextXAlignment.Left
-            secLbl.Parent = pageScroll
-        end
-
-        -- BUTTON
-        function TabAPI:AddButton(title, desc, callback)
-            local card, stroke = createCard(desc and 52 or 44)
-            injectText(card, title, desc)
-
-            local actionBtn = Instance.new("TextButton")
-            actionBtn.Size = UDim2.new(0, 90, 0, 28)
-            actionBtn.Position = UDim2.new(1, -104, 0.5, -14)
-            actionBtn.BackgroundColor3 = CurrentTheme.Accent
-            actionBtn.Text = "Execute"
-            actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            actionBtn.Font = Enum.Font.GothamMedium
-            actionBtn.TextSize = 12
-            actionBtn.Parent = card
-            Instance.new("UICorner", actionBtn).CornerRadius = UDim.new(0, 4)
-
-            actionBtn.MouseButton1Click:Connect(function()
-                tw(actionBtn, {BackgroundColor3 = CurrentTheme.AccentHover}, 0.1)
-                task.delay(0.1, function() tw(actionBtn, {BackgroundColor3 = CurrentTheme.Accent}, 0.1) end)
-                if callback then pcall(callback) end
-            end)
-        end
-
-        -- TOGGLE
-        function TabAPI:AddToggle(title, desc, default, callback, flag)
-            local card = createCard(desc and 52 or 44)
-            injectText(card, title, desc)
-            local state = default or false
-
-            local switch = Instance.new("Frame")
-            switch.Size = UDim2.new(0, 40, 0, 20)
-            switch.Position = UDim2.new(1, -54, 0.5, -10)
-            switch.BackgroundColor3 = state and CurrentTheme.Accent or CurrentTheme.ToggleOff
-            switch.Parent = card
-            Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
-
-            local knob = Instance.new("Frame")
-            knob.Size = UDim2.new(0, 14, 0, 14)
-            knob.Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
-            knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            knob.Parent = switch
-            Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
-            local clickBtn = Instance.new("TextButton")
-            clickBtn.Size = UDim2.new(1, 0, 1, 0)
-            clickBtn.BackgroundTransparency = 1
-            clickBtn.Text = ""
-            clickBtn.Parent = card
-
-            local function updateToggle()
-                tw(switch, {BackgroundColor3 = state and CurrentTheme.Accent or CurrentTheme.ToggleOff}, 0.15)
-                tw(knob, {Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}, 0.15)
-            end
-
-            clickBtn.MouseButton1Click:Connect(function()
-                state = not state
-                updateToggle()
-                if callback then pcall(callback, state) end
-            end)
-
-            local obj = {
-                Set = function(_, val) state = val updateToggle() if callback then callback(state) end end,
-                Get = function() return state end
-            }
-            if flag then WindowAPI.Flags[flag] = obj end
-            return obj
-        end
-
-        -- SLIDER
-        function TabAPI:AddSlider(title, min, max, default, callback, flag)
-            min, max = min or 0, max or 100
-            local val = math.clamp(default or min, min, max)
-            local card = createCard(54)
-            injectText(card, title)
-
-            local valLbl = Instance.new("TextLabel")
-            valLbl.Size = UDim2.new(0, 50, 0, 20)
-            valLbl.Position = UDim2.new(1, -64, 0, 6)
-            valLbl.BackgroundTransparency = 1
-            valLbl.Text = tostring(val)
-            valLbl.TextColor3 = CurrentTheme.Accent
-            valLbl.Font = Enum.Font.GothamBold
-            valLbl.TextSize = 12
-            valLbl.TextXAlignment = Enum.TextXAlignment.Right
-            valLbl.Parent = card
-
-            local track = Instance.new("Frame")
-            track.Size = UDim2.new(1, -28, 0, 4)
-            track.Position = UDim2.new(0, 14, 1, -12)
-            track.BackgroundColor3 = CurrentTheme.Border
-            track.Parent = card
-            Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
-
-            local fill = Instance.new("Frame")
-            fill.Size = UDim2.new((val - min)/(max - min), 0, 1, 0)
-            fill.BackgroundColor3 = CurrentTheme.Accent
-            fill.Parent = track
-            Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
-
-            local isDragging = false
-            local function updateSlider(input)
-                local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-                val = math.floor(min + (max - min) * pos)
-                fill.Size = UDim2.new(pos, 0, 1, 0)
-                valLbl.Text = tostring(val)
-                if callback then pcall(callback, val) end
-            end
-
-            card.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isDragging = true
-                    updateSlider(input)
-                end
-            end)
-            UIS.InputChanged:Connect(function(input)
-                if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    updateSlider(input)
-                end
-            end)
-            UIS.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isDragging = false
-                end
-            end)
-
-            local obj = {
-                Set = function(_, v)
-                    val = math.clamp(v, min, max)
-                    fill.Size = UDim2.new((val - min)/(max - min), 0, 1, 0)
-                    valLbl.Text = tostring(val)
-                end,
-                Get = function() return val end
-            }
-            if flag then WindowAPI.Flags[flag] = obj end
-            return obj
-        end
-
-        -- WIN11 GRID CARD SELECTOR (ไฮไลต์หลักตามดีไซน์ต้นแบบ)
-        function TabAPI:AddGridSelect(title, options, defaultIndex, callback)
-            local headerLbl = Instance.new("TextLabel")
-            headerLbl.Size = UDim2.new(1, 0, 0, 20)
-            headerLbl.BackgroundTransparency = 1
-            headerLbl.Text = title
-            headerLbl.TextSize = 13
-            headerLbl.TextColor3 = CurrentTheme.Text
-            headerLbl.Font = Enum.Font.GothamMedium
-            headerLbl.TextXAlignment = Enum.TextXAlignment.Left
-            headerLbl.Parent = pageScroll
-
-            local gridFrame = Instance.new("Frame")
-            gridFrame.Size = UDim2.new(1, 0, 0, 120)
-            gridFrame.BackgroundTransparency = 1
-            gridFrame.Parent = pageScroll
+            local gridContainer = Instance.new("Frame")
+            gridContainer.Size = UDim2.new(1, 0, 0, 0)
+            gridContainer.Position = UDim2.new(0, 0, 0, 28)
+            gridContainer.AutomaticSize = Enum.AutomaticSize.Y
+            gridContainer.BackgroundTransparency = 1
+            gridContainer.Parent = sectionWrap
 
             local gridLayout = Instance.new("UIGridLayout")
-            gridLayout.CellSize = UDim2.new(0, 175, 0, 110)
+            gridLayout.CellSize = UDim2.new(0, 285, 0, 130)
             gridLayout.CellPadding = UDim2.new(0, 12, 0, 12)
             gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            gridLayout.Parent = gridFrame
+            gridLayout.Parent = gridContainer
 
-            local selectedIdx = defaultIndex or 1
-            local cardBtns = {}
+            local selectedIndex = defaultIdx or 1
+            local createdCards = {}
 
-            for i, opt in ipairs(options) do
-                local cCard = Instance.new("TextButton")
-                cCard.Name = opt.Title or "Option"
-                cCard.BackgroundColor3 = CurrentTheme.Card
-                cCard.Text = ""
-                cCard.Parent = gridFrame
-                Instance.new("UICorner", cCard).CornerRadius = UDim.new(0, 6)
+            for idx, opt in ipairs(optionsList) do
+                local cardBtn = Instance.new("TextButton")
+                cardBtn.Name = opt.Title or "Option"
+                cardBtn.BackgroundColor3 = Theme.CardBG
+                cardBtn.Text = ""
+                cardBtn.AutoButtonColor = false
+                cardBtn.Parent = gridContainer
+                Instance.new("UICorner", cardBtn).CornerRadius = UDim.new(0, 6)
 
-                local stroke = Instance.new("UIStroke")
-                stroke.Color = (i == selectedIdx) and CurrentTheme.Accent or CurrentTheme.Border
-                stroke.Thickness = (i == selectedIdx) and 2 or 1
-                stroke.Parent = cCard
+                local cStroke = Instance.new("UIStroke")
+                cStroke.Color = (idx == selectedIndex) and Theme.Accent or Theme.CardBorder
+                cStroke.Thickness = (idx == selectedIndex) and 2 or 1
+                cStroke.Parent = cardBtn
 
-                -- Preview Box Inside Grid Item
-                local prevBox = Instance.new("Frame")
-                prevBox.Size = UDim2.new(1, -16, 0, 48)
-                prevBox.Position = UDim2.new(0, 8, 0, 8)
-                prevBox.BackgroundColor3 = CurrentTheme.BG
-                prevBox.Parent = cCard
-                Instance.new("UICorner", prevBox).CornerRadius = UDim.new(0, 4)
+                -- Procedural Graphic Preview Box (สร้างรูปจำลอง Window Mockup แท้ๆ)
+                local graphicBox = Instance.new("Frame")
+                graphicBox.Size = UDim2.new(0, 135, 0, 72)
+                graphicBox.Position = UDim2.new(0, 10, 0, 12)
+                graphicBox.BackgroundColor3 = Color3.fromRGB(230, 238, 248)
+                graphicBox.BorderSizePixel = 0
+                graphicBox.Parent = cardBtn
+                Instance.new("UICorner", graphicBox).CornerRadius = UDim.new(0, 4)
 
-                if opt.Image then
-                    local img = Instance.new("ImageLabel")
-                    img.Size = UDim2.new(1, 0, 1, 0)
-                    img.BackgroundTransparency = 1
-                    img.Image = opt.Image
-                    img.Parent = prevBox
-                    Instance.new("UICorner", img).CornerRadius = UDim.new(0, 4)
-                end
+                -- Mockup Inner Top Bar
+                local mockBar = Instance.new("Frame")
+                mockBar.Size = UDim2.new(1, -12, 0, 16)
+                mockBar.Position = UDim2.new(0, 6, 0, 10)
+                mockBar.BackgroundColor3 = Color3.fromRGB(210, 222, 238)
+                mockBar.BorderSizePixel = 0
+                mockBar.Parent = graphicBox
+                Instance.new("UICorner", mockBar).CornerRadius = UDim.new(0, 3)
 
-                local cTitle = Instance.new("TextLabel")
-                cTitle.Size = UDim2.new(1, -16, 0, 16)
-                cTitle.Position = UDim2.new(0, 8, 0, 60)
-                cTitle.BackgroundTransparency = 1
-                cTitle.Text = opt.Title or "Tab Style"
-                cTitle.TextSize = 12
-                cTitle.TextColor3 = CurrentTheme.Text
-                cTitle.Font = Enum.Font.GothamBold
-                cTitle.TextXAlignment = Enum.TextXAlignment.Left
-                cTitle.Parent = cCard
+                -- Mockup Active Tab Highlight
+                local mockTab = Instance.new("Frame")
+                mockTab.Size = UDim2.new(0, 34, 0, 12)
+                mockTab.Position = UDim2.new(0, 4, 0, 2)
+                mockTab.BackgroundColor3 = Theme.Accent
+                mockTab.BorderSizePixel = 0
+                mockTab.Parent = mockBar
+                Instance.new("UICorner", mockTab).CornerRadius = UDim.new(0, 2)
 
-                local cDesc = Instance.new("TextLabel")
-                cDesc.Size = UDim2.new(1, -16, 0, 24)
-                cDesc.Position = UDim2.new(0, 8, 0, 78)
-                cDesc.BackgroundTransparency = 1
-                cDesc.Text = opt.Description or "Description text..."
-                cDesc.TextSize = 10
-                cDesc.TextColor3 = CurrentTheme.SubText
-                cDesc.Font = Enum.Font.Gotham
-                cDesc.TextWrapped = true
-                cDesc.TextXAlignment = Enum.TextXAlignment.Left
-                cDesc.Parent = cCard
+                -- Text Elements
+                local tLbl = Instance.new("TextLabel")
+                tLbl.Size = UDim2.new(1, -160, 0, 18)
+                tLbl.Position = UDim2.new(0, 152, 0, 12)
+                tLbl.BackgroundTransparency = 1
+                tLbl.Text = opt.Title or "Title"
+                tLbl.TextSize = 13
+                tLbl.TextColor3 = Theme.TextPrimary
+                tLbl.Font = Enum.Font.GothamBold
+                tLbl.TextXAlignment = Enum.TextXAlignment.Left
+                tLbl.TextTruncate = Enum.TextTruncate.AtEnd
+                tLbl.Parent = cardBtn
 
-                local checkIcon = Instance.new("TextLabel")
-                checkIcon.Size = UDim2.new(0, 16, 0, 16)
-                checkIcon.Position = UDim2.new(1, -20, 1, -20)
-                checkIcon.BackgroundTransparency = 1
-                checkIcon.Text = "✓"
-                checkIcon.TextColor3 = CurrentTheme.Accent
-                checkIcon.Font = Enum.Font.GothamBold
-                checkIcon.TextSize = 12
-                checkIcon.Visible = (i == selectedIdx)
-                checkIcon.Parent = cCard
+                local dLbl = Instance.new("TextLabel")
+                dLbl.Size = UDim2.new(1, -160, 0, 60)
+                dLbl.Position = UDim2.new(0, 152, 0, 32)
+                dLbl.BackgroundTransparency = 1
+                dLbl.Text = opt.Description or "Description"
+                dLbl.TextSize = 10
+                dLbl.TextColor3 = Theme.TextSecondary
+                dLbl.Font = Enum.Font.Gotham
+                dLbl.TextXAlignment = Enum.TextXAlignment.Left
+                dLbl.TextYAlignment = Enum.TextYAlignment.Top
+                dLbl.TextWrapped = true
+                dLbl.Parent = cardBtn
 
-                table.insert(cardBtns, { Card = cCard, Stroke = stroke, Check = checkIcon })
+                -- Checkmark Icon (✓) เวลาถูกเลือก
+                local checkMark = Instance.new("TextLabel")
+                checkMark.Size = UDim2.new(0, 16, 0, 16)
+                checkMark.Position = UDim2.new(1, -22, 1, -22)
+                checkMark.BackgroundTransparency = 1
+                checkMark.Text = "✓"
+                checkMark.TextSize = 13
+                checkMark.TextColor3 = Theme.TextPrimary
+                checkMark.Font = Enum.Font.GothamBold
+                checkMark.Visible = (idx == selectedIndex)
+                checkMark.Parent = cardBtn
 
-                cCard.MouseButton1Click:Connect(function()
-                    selectedIdx = i
-                    for idx, item in ipairs(cardBtns) do
-                        item.Stroke.Color = (idx == selectedIdx) and CurrentTheme.Accent or CurrentTheme.Border
-                        item.Stroke.Thickness = (idx == selectedIdx) and 2 or 1
-                        item.Check.Visible = (idx == selectedIdx)
+                table.insert(createdCards, { Card = cardBtn, Stroke = cStroke, Check = checkMark })
+
+                cardBtn.MouseButton1Click:Connect(function()
+                    selectedIndex = idx
+                    for i, c in ipairs(createdCards) do
+                        c.Stroke.Color = (i == selectedIndex) and Theme.Accent or Theme.CardBorder
+                        c.Stroke.Thickness = (i == selectedIndex) and 2 or 1
+                        c.Check.Visible = (i == selectedIndex)
                     end
-                    if callback then pcall(callback, opt, i) end
+                    if callback then pcall(callback, opt, idx) end
                 end)
             end
         end
 
-        -- DROPDOWN
-        function TabAPI:AddDropdown(title, desc, options, default, callback, flag)
-            local card = createCard(desc and 52 or 44)
-            injectText(card, title, desc)
-            local selected = default or options[1] or "Select"
-            local open = false
+        -- 2. ADD CONTAINER ROW WITH TOGGLES (กล่องจัดกลุ่มสวิตช์ Toggle แนวยาวแบบในรูปภาพ)
+        function TabAPI:AddGroupContainer(togglesData)
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, #togglesData * 52 + 8)
+            container.BackgroundColor3 = Theme.CardBG
+            container.Parent = pageScroll
+            Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
 
-            local box = Instance.new("TextButton")
-            box.Size = UDim2.new(0, 130, 0, 28)
-            box.Position = UDim2.new(1, -144, 0.5, -14)
-            box.BackgroundColor3 = CurrentTheme.BG
-            box.Text = tostring(selected) .. "  ▼"
-            box.TextColor3 = CurrentTheme.Text
-            box.Font = Enum.Font.Gotham
-            box.TextSize = 11
-            box.Parent = card
-            Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
-            local boxStroke = Instance.new("UIStroke")
-            boxStroke.Color = CurrentTheme.Border
-            boxStroke.Parent = box
+            local cStroke = Instance.new("UIStroke")
+            cStroke.Color = Theme.CardBorder
+            cStroke.Thickness = 1
+            cStroke.Parent = container
 
-            local dropList = Instance.new("Frame")
-            dropList.Size = UDim2.new(0, 130, 0, math.min(#options, 5) * 28 + 6)
-            dropList.BackgroundColor3 = CurrentTheme.Card
-            dropList.Visible = false
-            dropList.ZIndex = 500
-            dropList.Parent = sg
-            Instance.new("UICorner", dropList).CornerRadius = UDim.new(0, 6)
-            Instance.new("UIStroke", dropList).Color = CurrentTheme.Border
+            for idx, item in ipairs(togglesData) do
+                local row = Instance.new("Frame")
+                row.Size = UDim2.new(1, 0, 0, 52)
+                row.Position = UDim2.new(0, 0, 0, (idx - 1) * 52)
+                row.BackgroundTransparency = 1
+                row.Parent = container
 
-            local listScroll = Instance.new("ScrollingFrame")
-            listScroll.Size = UDim2.new(1, -4, 1, -4)
-            listScroll.Position = UDim2.new(0, 2, 0, 2)
-            listScroll.BackgroundTransparency = 1
-            listScroll.ScrollBarThickness = 2
-            listScroll.Parent = dropList
-            Instance.new("UIListLayout", listScroll).SortOrder = Enum.SortOrder.LayoutOrder
+                if idx < #togglesData then
+                    local line = Instance.new("Frame")
+                    line.Size = UDim2.new(1, -32, 0, 1)
+                    line.Position = UDim2.new(0, 16, 1, -1)
+                    line.BackgroundColor3 = Theme.CardBorder
+                    line.BorderSizePixel = 0
+                    line.Parent = row
+                end
 
-            for _, opt in ipairs(options) do
-                local optBtn = Instance.new("TextButton")
-                optBtn.Size = UDim2.new(1, 0, 0, 26)
-                optBtn.BackgroundTransparency = 1
-                optBtn.Text = tostring(opt)
-                optBtn.TextColor3 = CurrentTheme.Text
-                optBtn.Font = Enum.Font.Gotham
-                optBtn.TextSize = 11
-                optBtn.Parent = listScroll
+                -- Preview Icon Box Inside Row (ถ้ามี)
+                local pBox = Instance.new("Frame")
+                pBox.Size = UDim2.new(0, 70, 0, 34)
+                pBox.Position = UDim2.new(0, 14, 0.5, -17)
+                pBox.BackgroundColor3 = Color3.fromRGB(230, 238, 248)
+                pBox.BorderSizePixel = 0
+                pBox.Parent = row
+                Instance.new("UICorner", pBox).CornerRadius = UDim.new(0, 3)
 
-                optBtn.MouseButton1Click:Connect(function()
-                    selected = opt
-                    box.Text = tostring(selected) .. "  ▼"
-                    dropList.Visible = false
-                    open = false
-                    if callback then pcall(callback, selected) end
+                local pBar = Instance.new("Frame")
+                pBar.Size = UDim2.new(1, -8, 0, 12)
+                pBar.Position = UDim2.new(0, 4, 0, 4)
+                pBar.BackgroundColor3 = Theme.Accent
+                pBar.BorderSizePixel = 0
+                pBar.Parent = pBox
+                Instance.new("UICorner", pBar).CornerRadius = UDim.new(0, 2)
+
+                local tLbl = Instance.new("TextLabel")
+                tLbl.Size = UDim2.new(1, -200, 0, 16)
+                tLbl.Position = UDim2.new(0, 96, 0, item.Description and 8 or 18)
+                tLbl.BackgroundTransparency = 1
+                tLbl.Text = item.Title or "Title"
+                tLbl.TextSize = 12
+                tLbl.TextColor3 = Theme.TextPrimary
+                tLbl.Font = Enum.Font.GothamMedium
+                tLbl.TextXAlignment = Enum.TextXAlignment.Left
+                tLbl.Parent = row
+
+                if item.Description then
+                    local dLbl = Instance.new("TextLabel")
+                    dLbl.Size = UDim2.new(1, -200, 0, 14)
+                    dLbl.Position = UDim2.new(0, 96, 0, 26)
+                    dLbl.BackgroundTransparency = 1
+                    dLbl.Text = item.Description
+                    dLbl.TextSize = 10
+                    dLbl.TextColor3 = Theme.TextSecondary
+                    dLbl.Font = Enum.Font.Gotham
+                    dLbl.TextXAlignment = Enum.TextXAlignment.Left
+                    dLbl.Parent = row
+                end
+
+                -- On / Off Text Label
+                local stateText = Instance.new("TextLabel")
+                stateText.Size = UDim2.new(0, 30, 0, 20)
+                stateText.Position = UDim2.new(1, -95, 0.5, -10)
+                stateText.BackgroundTransparency = 1
+                stateText.Text = item.Default and "On" or "Off"
+                stateText.TextSize = 12
+                stateText.TextColor3 = Theme.TextPrimary
+                stateText.Font = Enum.Font.Gotham
+                stateText.TextXAlignment = Enum.TextXAlignment.Right
+                stateText.Parent = row
+
+                -- Windows 11 Toggle Switch
+                local state = item.Default or false
+                local switch = Instance.new("Frame")
+                switch.Size = UDim2.new(0, 42, 0, 20)
+                switch.Position = UDim2.new(1, -56, 0.5, -10)
+                switch.BackgroundColor3 = state and Theme.ToggleOff or Color3.fromRGB(220, 220, 225)
+                switch.Parent = row
+                Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
+
+                local knob = Instance.new("Frame")
+                knob.Size = UDim2.new(0, 14, 0, 14)
+                knob.Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+                knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                knob.Parent = switch
+                Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+                local clickBtn = Instance.new("TextButton")
+                clickBtn.Size = UDim2.new(1, 0, 1, 0)
+                clickBtn.BackgroundTransparency = 1
+                clickBtn.Text = ""
+                clickBtn.Parent = row
+
+                clickBtn.MouseButton1Click:Connect(function()
+                    state = not state
+                    stateText.Text = state and "On" or "Off"
+                    tw(switch, {BackgroundColor3 = state and Theme.ToggleOff or Color3.fromRGB(220, 220, 225)}, 0.15)
+                    tw(knob, {Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}, 0.15)
+                    if item.Callback then pcall(item.Callback, state) end
                 end)
             end
-
-            box.MouseButton1Click:Connect(function()
-                open = not open
-                if open then
-                    local abs = box.AbsolutePosition
-                    dropList.Position = UDim2.new(0, abs.X, 0, abs.Y + 32)
-                    dropList.Visible = true
-                    activeDropdownClose = function() dropList.Visible = false open = false end
-                else
-                    dropList.Visible = false
-                end
-            end)
         end
 
         return TabAPI
