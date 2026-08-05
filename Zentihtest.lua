@@ -59,12 +59,12 @@ local Themes = {
         Active = Color3.fromRGB(38, 38, 42), Accent = Color3.fromRGB(80, 160, 255),
         DotRed = Color3.fromRGB(255, 95, 87), DotGreen = Color3.fromRGB(40, 200, 64)
     },
-    -- สี2: ขาวหมด ตัวหนังสือดำ
+    -- สี2: Windows Fluent Light — ตรงตามภาพ Groupy/Windows 11 Settings ที่ส่งมา
     ["White"] = {
-        BG = Color3.fromRGB(255, 255, 255), Sidebar = Color3.fromRGB(242, 242, 245),
-        Card = Color3.fromRGB(250, 250, 252), Border = Color3.fromRGB(220, 220, 225),
-        Text = Color3.fromRGB(20, 20, 22), Sub = Color3.fromRGB(80, 80, 90),
-        Active = Color3.fromRGB(230, 230, 235), Accent = Color3.fromRGB(30, 110, 255),
+        BG = Color3.fromRGB(249, 249, 251), Sidebar = Color3.fromRGB(243, 243, 246),
+        Card = Color3.fromRGB(255, 255, 255), Border = Color3.fromRGB(228, 228, 233),
+        Text = Color3.fromRGB(32, 32, 36), Sub = Color3.fromRGB(110, 110, 122),
+        Active = Color3.fromRGB(224, 236, 252), Accent = Color3.fromRGB(0, 103, 224),
         DotRed = Color3.fromRGB(255, 95, 87), DotGreen = Color3.fromRGB(40, 200, 64)
     },
     -- สี3: เขียวผสมดำมนๆ ตัวหนังสือเขียวอ่อน
@@ -192,7 +192,7 @@ function Library.CreateWindow(config)
     main.ClipsDescendants = true
     main.Active = true
     main.Parent = sg
-    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = main end
+    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,16) c.Parent = main end
     local mainStroke = Instance.new("UIStroke") mainStroke.Color = Th.Border mainStroke.Thickness = 1 mainStroke.Parent = main
 
     -- เงาใต้หน้าต่าง
@@ -260,7 +260,7 @@ function Library.CreateWindow(config)
     bgImage.ZIndex = 0
     bgImage.Visible = BackgroundImage ~= nil
     bgImage.Parent = main
-    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = bgImage end
+    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,16) c.Parent = bgImage end
 
     local sidebar = Instance.new("Frame")
     sidebar.Name = "Sidebar"
@@ -270,7 +270,7 @@ function Library.CreateWindow(config)
     sidebar.BorderSizePixel = 0
     sidebar.Parent = main
     sidebar.Active = true
-    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = sidebar end
+    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,16) c.Parent = sidebar end
     local sidebarSheen = Instance.new("UIGradient")
     sidebarSheen.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)),
@@ -306,7 +306,7 @@ function Library.CreateWindow(config)
     profileIcon.Visible = hasIcon(ProfileIcon)
     profileIcon.ScaleType = Enum.ScaleType.Crop
     profileIcon.Parent = headerWrap
-    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = profileIcon end
+    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,12) c.Parent = profileIcon end
     local profileStroke = Instance.new("UIStroke") profileStroke.Color = Th.Border profileStroke.Parent = profileIcon
 
     local titleOffsetX = profileIcon.Visible and 52 or 12
@@ -361,7 +361,7 @@ function Library.CreateWindow(config)
 
     local navLayout = Instance.new("UIListLayout")
     navLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    navLayout.Padding = UDim.new(0,2)
+    navLayout.Padding = UDim.new(0,4)
     navLayout.Parent = navScroll
 
     local navPad = Instance.new("UIPadding")
@@ -416,7 +416,7 @@ function Library.CreateWindow(config)
     searchWrap.BackgroundColor3 = Th.BG
     searchWrap.BackgroundTransparency = 0
     searchWrap.Parent = topBar
-    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,6) c.Parent = searchWrap end
+    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,13) c.Parent = searchWrap end
     local searchStroke = Instance.new("UIStroke") searchStroke.Color = Th.Border searchStroke.Thickness = 1.2 searchStroke.Parent = searchWrap
 
     local searchIcon = Instance.new("TextLabel")
@@ -868,7 +868,7 @@ function Library.CreateWindow(config)
         nBox.BackgroundColor3 = Th.Card
         nBox.ClipsDescendants = true
         nBox.Parent = notifyList
-        do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, 6) c.Parent = nBox end
+        do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,12) c.Parent = nBox end
         local nStroke = Instance.new("UIStroke") nStroke.Color = Th.Accent nStroke.Transparency = 0.5 nStroke.Thickness = 1 nStroke.Parent = nBox
 
         local nT = Instance.new("TextLabel")
@@ -923,7 +923,7 @@ function Library.CreateWindow(config)
             catBtn.Text = ""
             catBtn.LayoutOrder = #tabList * 100
             catBtn.Parent = navScroll
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,6) c.Parent = catBtn end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,12) c.Parent = catBtn end
             local catStroke = Instance.new("UIStroke") catStroke.Color = catColor catStroke.Transparency = 0.45 catStroke.Thickness = 1 catStroke.Parent = catBtn
             
             task.spawn(function()
@@ -1015,7 +1015,7 @@ function Library.CreateWindow(config)
 
         local layout = Instance.new("UIListLayout")
         layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Padding = UDim.new(0,7)
+        layout.Padding = UDim.new(0,9)
         layout.Parent = scroll
 
         local pad = Instance.new("UIPadding")
@@ -1076,7 +1076,7 @@ function Library.CreateWindow(config)
             row.BorderSizePixel = 0
             row.LayoutOrder = nextOrder()
             row.Parent = scroll
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,6) c.Parent = row end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,12) c.Parent = row end
             local stroke = Instance.new("UIStroke")
             stroke.Color = Th.Border
             stroke.Transparency = 0
@@ -1283,7 +1283,7 @@ function Library.CreateWindow(config)
             checkBox.Text = ""
             checkBox.AutoButtonColor = false
             checkBox.Parent = row
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,5) c.Parent = checkBox end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = checkBox end
             local checkStroke = Instance.new("UIStroke") checkStroke.Color = Th.Border checkStroke.Parent = checkBox
 
             local mark = Instance.new("TextLabel")
@@ -1424,7 +1424,7 @@ function Library.CreateWindow(config)
             inputWrap.Position = UDim2.new(1,0,0,2)
             inputWrap.BackgroundColor3 = Th.BG
             inputWrap.Parent = row
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,4) c.Parent = inputWrap end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = inputWrap end
             local inputStroke = Instance.new("UIStroke") inputStroke.Color = Th.Border inputStroke.Parent = inputWrap
 
             local numField = Instance.new("TextBox")
@@ -1520,7 +1520,7 @@ function Library.CreateWindow(config)
             box.Text = ""
             box.AutoButtonColor = false
             box.Parent = row
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,4) c.Parent = box end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,10) c.Parent = box end
             local boxStroke = Instance.new("UIStroke") boxStroke.Color = Th.Border boxStroke.Thickness = 1.3 boxStroke.Transparency = 0 boxStroke.Parent = box
 
             local boxLbl = Instance.new("TextLabel")
@@ -1541,7 +1541,7 @@ function Library.CreateWindow(config)
             list.Visible = false
             list.ZIndex = 200
             list.Parent = sg
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,6) c.Parent = list end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,12) c.Parent = list end
             local listStroke = Instance.new("UIStroke") listStroke.Color = Th.Border listStroke.Thickness = 1.5 listStroke.Parent = list
             local listUIScale = Instance.new("UIScale") listUIScale.Parent = list
 
@@ -1603,7 +1603,7 @@ function Library.CreateWindow(config)
                     optBtn.ZIndex = 202
                     optBtn.TextXAlignment = Enum.TextXAlignment.Left
                     optBtn.Parent = listScroll
-                    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,5) c.Parent = optBtn end
+                    do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = optBtn end
                     local oPad = Instance.new("UIPadding") oPad.PaddingLeft = UDim.new(0,8) oPad.Parent = optBtn
 
                     optBtns[opt] = optBtn
@@ -1697,7 +1697,7 @@ function Library.CreateWindow(config)
             box.Text = ""
             box.AutoButtonColor = false
             box.Parent = row
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,4) c.Parent = box end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,10) c.Parent = box end
             local boxStroke = Instance.new("UIStroke") boxStroke.Color = Th.Border boxStroke.Thickness = 1.3 boxStroke.Transparency = 0 boxStroke.Parent = box
 
             local boxLbl = Instance.new("TextLabel")
@@ -1726,7 +1726,7 @@ function Library.CreateWindow(config)
             list.Visible = false
             list.ZIndex = 200
             list.Parent = sg
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,6) c.Parent = list end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,12) c.Parent = list end
             local listStroke = Instance.new("UIStroke") listStroke.Color = Th.Border listStroke.Thickness = 1.5 listStroke.Parent = list
             local listUIScale = Instance.new("UIScale") listUIScale.Parent = list
 
@@ -1787,7 +1787,7 @@ function Library.CreateWindow(config)
                 optBtn.ZIndex = 202
                 optBtn.TextXAlignment = Enum.TextXAlignment.Left
                 optBtn.Parent = listScroll
-                do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,5) c.Parent = optBtn end
+                do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = optBtn end
                 local optS = Instance.new("UIStroke") optS.Color = Th.Accent optS.Thickness = 1.2 optS.Transparency = 1 optS.Parent = optBtn
                 local optPad = Instance.new("UIPadding") optPad.PaddingLeft = UDim.new(0,6) optPad.Parent = optBtn
                 optBtns[opt] = optBtn
@@ -1857,7 +1857,7 @@ function Library.CreateWindow(config)
             inputWrap.Position = UDim2.new(1, 0, 0.5, 0)
             inputWrap.BackgroundColor3 = Th.BG
             inputWrap.Parent = row
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,4) c.Parent = inputWrap end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = inputWrap end
             local inputStroke = Instance.new("UIStroke") inputStroke.Color = Th.Border inputStroke.Parent = inputWrap
 
             local inputField = Instance.new("TextBox")
@@ -1899,7 +1899,7 @@ function Library.CreateWindow(config)
             keybindBox.Text = ""
             keybindBox.AutoButtonColor = false
             keybindBox.Parent = row
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,4) c.Parent = keybindBox end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = keybindBox end
             local keybindStroke = Instance.new("UIStroke") keybindStroke.Color = Th.Border keybindStroke.Parent = keybindBox
 
             local keybindLbl = Instance.new("TextLabel")
@@ -1953,7 +1953,7 @@ function Library.CreateWindow(config)
             colorPreview.Text = ""
             colorPreview.AutoButtonColor = false
             colorPreview.Parent = row
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,4) c.Parent = colorPreview end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,8) c.Parent = colorPreview end
             local colorStroke = Instance.new("UIStroke") colorStroke.Color = Th.Border colorStroke.Parent = colorPreview
 
             local panel = Instance.new("Frame")
@@ -1962,7 +1962,7 @@ function Library.CreateWindow(config)
             panel.Visible = false
             panel.ZIndex = 200
             panel.Parent = sg
-            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,6) c.Parent = panel end
+            do local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0,12) c.Parent = panel end
             do local s = Instance.new("UIStroke") s.Color = Th.Border s.Parent = panel end
             local ppad = Instance.new("UIPadding") ppad.PaddingLeft=UDim.new(0,8) ppad.PaddingRight=UDim.new(0,8) ppad.PaddingTop=UDim.new(0,8) ppad.Parent = panel
 
