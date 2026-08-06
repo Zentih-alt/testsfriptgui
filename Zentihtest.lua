@@ -485,7 +485,7 @@ function Solar.CreateWindow(config)
             local card = createCard(48)
 
             local tLbl = Instance.new("TextLabel")
-            tLbl.Size = UDim2.new(0.5, -16, 1, 0)
+            tLbl.Size = UDim2.new(0, 140, 1, 0)
             tLbl.Position = UDim2.new(0, 14, 0, 0)
             tLbl.BackgroundTransparency = 1
             tLbl.Text = title
@@ -498,42 +498,43 @@ function Solar.CreateWindow(config)
             local selected = default or options[1] or "Select"
             local open = false
 
+            -- กล่อง Dropdown ขยายเต็มพื้นที่ว่างฝั่งขวาของ card (responsive ตามความกว้าง)
             local box = Instance.new("TextButton")
-            box.Size = UDim2.new(0, 150, 0, 30)
-            box.Position = UDim2.new(1, -164, 0.5, -15)
+            box.Size = UDim2.new(1, -172, 0, 34)
+            box.Position = UDim2.new(0, 162, 0.5, -17)
             box.BackgroundColor3 = Theme.MainBG
             box.Text = ""
             box.AutoButtonColor = false
             box.Parent = card
-            Instance.new("UICorner", box).CornerRadius = UDim.new(0, 5)
+            Instance.new("UICorner", box).CornerRadius = UDim.new(0, 6)
             local boxStroke = Instance.new("UIStroke")
             boxStroke.Color = Theme.CardBorder
             boxStroke.Parent = box
 
             local boxLbl = Instance.new("TextLabel")
-            boxLbl.Size = UDim2.new(1, -24, 1, 0)
-            boxLbl.Position = UDim2.new(0, 10, 0, 0)
+            boxLbl.Size = UDim2.new(1, -34, 1, 0)
+            boxLbl.Position = UDim2.new(0, 14, 0, 0)
             boxLbl.BackgroundTransparency = 1
             boxLbl.Text = tostring(selected)
             boxLbl.TextColor3 = Theme.TextPrimary
             boxLbl.Font = Enum.Font.GothamMedium
-            boxLbl.TextSize = 12
+            boxLbl.TextSize = 13
             boxLbl.TextXAlignment = Enum.TextXAlignment.Left
             boxLbl.TextTruncate = Enum.TextTruncate.AtEnd
             boxLbl.Parent = box
 
             local arrowIcon = Instance.new("TextLabel")
-            arrowIcon.Size = UDim2.new(0, 16, 1, 0)
-            arrowIcon.Position = UDim2.new(1, -18, 0, 0)
+            arrowIcon.Size = UDim2.new(0, 20, 1, 0)
+            arrowIcon.Position = UDim2.new(1, -24, 0, 0)
             arrowIcon.BackgroundTransparency = 1
             arrowIcon.Text = "▲"
             arrowIcon.TextColor3 = Theme.TextSecondary
-            arrowIcon.TextSize = 9
+            arrowIcon.TextSize = 10
             arrowIcon.Parent = box
 
             local listHeight = math.min(#options, 5) * 32 + 8
 
-            -- Dropdown Popup Container
+            -- Dropdown Popup Container (กว้างเท่ากล่อง box จริง อัปเดตตอนเปิด)
             local dropList = Instance.new("Frame")
             dropList.Name = "DropdownList"
             dropList.Size = UDim2.new(0, 150, 0, listHeight)
@@ -665,7 +666,9 @@ function Solar.CreateWindow(config)
                 if open then
                     if activeCloseDropdown then activeCloseDropdown() end
                     local abs = box.AbsolutePosition
-                    -- คำนวณให้รายการเด้งขึ้นด้านบน
+                    local absSize = box.AbsoluteSize
+                    -- ให้รายการกว้างเท่ากล่อง box จริง แล้วเด้งขึ้นด้านบน
+                    dropList.Size = UDim2.new(0, absSize.X, 0, listHeight)
                     dropList.Position = UDim2.new(0, abs.X, 0, abs.Y - listHeight - 4)
                     dropList.Visible = true
                     tw(arrowIcon, {Rotation = 180}, 0.15)
