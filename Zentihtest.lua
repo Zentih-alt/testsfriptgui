@@ -118,27 +118,10 @@ function Solar.CreateWindow(config)
     groupyFix.BorderSizePixel = 0
     groupyFix.Parent = groupyBar
 
-    -- Top-Left Logo Icon
-    local logoIcon = Instance.new("Frame")
-    logoIcon.Size = UDim2.new(0, 26, 0, 26)
-    logoIcon.Position = UDim2.new(0, 6, 0, 5)
-    logoIcon.BackgroundColor3 = Theme.Accent
-    logoIcon.Parent = groupyBar
-    Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 6)
-
-    local logoText = Instance.new("TextLabel")
-    logoText.Size = UDim2.new(1, 0, 1, 0)
-    logoText.BackgroundTransparency = 1
-    logoText.Text = "⚡"
-    logoText.TextSize = 13
-    logoText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    logoText.Font = Enum.Font.GothamBold
-    logoText.Parent = logoIcon
-
     -- Home Button
     local homeBtn = Instance.new("TextButton")
     homeBtn.Size = UDim2.new(0, 72, 0, 26)
-    homeBtn.Position = UDim2.new(0, 38, 0, 5)
+    homeBtn.Position = UDim2.new(0, 6, 0, 5)
     homeBtn.BackgroundColor3 = Theme.GroupyTabActive
     homeBtn.Text = "🏠 Home"
     homeBtn.TextSize = 11
@@ -149,8 +132,8 @@ function Solar.CreateWindow(config)
 
     -- Top Tabs Container
     local topTabsScroll = Instance.new("ScrollingFrame")
-    topTabsScroll.Size = UDim2.new(1, -180, 1, 0)
-    topTabsScroll.Position = UDim2.new(0, 116, 0, 0)
+    topTabsScroll.Size = UDim2.new(1, -148, 1, 0)
+    topTabsScroll.Position = UDim2.new(0, 84, 0, 0)
     topTabsScroll.BackgroundTransparency = 1
     topTabsScroll.BorderSizePixel = 0
     topTabsScroll.ScrollBarThickness = 0
@@ -317,7 +300,7 @@ function Solar.CreateWindow(config)
     local WindowAPI = { Flags = {} }
     local tabsList = {}
 
-    function WindowAPI.AddTab(tabName, iconSymbol)
+    function WindowAPI:AddTab(tabName, iconSymbol)
         local tabBtn = Instance.new("TextButton")
         tabBtn.Size = UDim2.new(1, 0, 0, 32)
         tabBtn.BackgroundColor3 = Theme.CardBG
