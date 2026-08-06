@@ -457,10 +457,11 @@ function Solar.CreateWindow(config)
             card.BackgroundColor3 = Theme.CardBG
             card.ClipsDescendants = false
             card.Parent = pageScroll
-            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
+            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 4)
             local stroke = Instance.new("UIStroke")
             stroke.Color = Theme.CardBorder
             stroke.Thickness = 1
+            stroke.Transparency = 0.15
             stroke.Parent = card
             return card, stroke
         end
@@ -854,6 +855,135 @@ function Solar.CreateWindow(config)
 
             inpBox.FocusLost:Connect(function()
                 if callback then pcall(callback, inpBox.Text) end
+            end)
+        end
+
+        -- =========================================================================
+        -- TOGGLE SWITCH (สไตล์วงกลมเลื่อน ตามตัวอย่าง)
+        -- =========================================================================
+        function TabAPI:AddToggle(title, desc, default, callback, flag)
+            local state = default and true or false
+            local card = createCard(desc and 54 or 46)
+
+            local tLbl = Instance.new("TextLabel")
+            tLbl.Size = UDim2.new(1, -80, 0, desc and 18 or 0)
+            tLbl.Position = UDim2.new(0, 14, 0.5, desc and -16 or 0)
+            if not desc then tLbl.Size = UDim2.new(1, -80, 1, 0) tLbl.Position = UDim2.new(0, 14, 0, 0) end
+            tLbl.BackgroundTransparency = 1
+            tLbl.Text = title
+            tLbl.TextSize = 13
+            tLbl.TextColor3 = Theme.TextPrimary
+            tLbl.Font = Enum.Font.GothamMedium
+            tLbl.TextXAlignment = Enum.TextXAlignment.Left
+            tLbl.Parent = card
+
+            if desc then
+                local dLbl = Instance.new("TextLabel")
+                dLbl.Size = UDim2.new(1, -80, 0, 14)
+                dLbl.Position = UDim2.new(0, 14, 0.5, 2)
+                dLbl.BackgroundTransparency = 1
+                dLbl.Text = desc
+                dLbl.TextSize = 10
+                dLbl.TextColor3 = Theme.TextSecondary
+                dLbl.Font = Enum.Font.Gotham
+                dLbl.TextXAlignment = Enum.TextXAlignment.Left
+                dLbl.Parent = card
+            end
+
+            local switchTrack = Instance.new("Frame")
+            switchTrack.Size = UDim2.new(0, 42, 0, 24)
+            switchTrack.Position = UDim2.new(1, -56, 0.5, -12)
+            switchTrack.BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff
+            switchTrack.Parent = card
+            Instance.new("UICorner", switchTrack).CornerRadius = UDim.new(1, 0)
+
+            local switchKnob = Instance.new("Frame")
+            switchKnob.Size = UDim2.new(0, 18, 0, 18)
+            switchKnob.Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+            switchKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            switchKnob.Parent = switchTrack
+            Instance.new("UICorner", switchKnob).CornerRadius = UDim.new(1, 0)
+
+            local hitBtn = Instance.new("TextButton")
+            hitBtn.Size = UDim2.new(1, 0, 1, 0)
+            hitBtn.BackgroundTransparency = 1
+            hitBtn.Text = ""
+            hitBtn.Parent = switchTrack
+
+            local function render()
+                tw(switchTrack, {BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff}, 0.15)
+                tw(switchKnob, {Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}, 0.15)
+            end
+
+            hitBtn.MouseButton1Click:Connect(function()
+                state = not state
+                render()
+                if callback then pcall(callback, state) end
+            end)
+
+            local obj = {
+                Get = function() return state end,
+                Set = function(_, v)
+                    state = v and true or false
+                    render()
+                end
+            }
+            if flag then WindowAPI.Flags[flag] = obj end
+            return obj
+        end
+
+        -- =========================================================================
+        -- ARROW / EXPAND ROW (แถวคลิกได้ พร้อมลูกศร > ด้านขวา ตามตัวอย่าง)
+        -- =========================================================================
+        function TabAPI:AddArrow(title, desc, callback)
+            local card = createCard(desc and 54 or 46)
+
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 1, 0)
+            btn.BackgroundTransparency = 1
+            btn.Text = ""
+            btn.AutoButtonColor = false
+            btn.Parent = card
+
+            local tLbl = Instance.new("TextLabel")
+            tLbl.Size = UDim2.new(1, -50, 0, desc and 18 or 0)
+            tLbl.Position = UDim2.new(0, 14, 0.5, desc and -16 or 0)
+            if not desc then tLbl.Size = UDim2.new(1, -50, 1, 0) tLbl.Position = UDim2.new(0, 14, 0, 0) end
+            tLbl.BackgroundTransparency = 1
+            tLbl.Text = title
+            tLbl.TextSize = 13
+            tLbl.TextColor3 = Theme.TextPrimary
+            tLbl.Font = Enum.Font.GothamMedium
+            tLbl.TextXAlignment = Enum.TextXAlignment.Left
+            tLbl.Parent = card
+
+            if desc then
+                local dLbl = Instance.new("TextLabel")
+                dLbl.Size = UDim2.new(1, -50, 0, 14)
+                dLbl.Position = UDim2.new(0, 14, 0.5, 2)
+                dLbl.BackgroundTransparency = 1
+                dLbl.Text = desc
+                dLbl.TextSize = 10
+                dLbl.TextColor3 = Theme.TextSecondary
+                dLbl.Font = Enum.Font.Gotham
+                dLbl.TextXAlignment = Enum.TextXAlignment.Left
+                dLbl.Parent = card
+            end
+
+            local arrowLbl = Instance.new("TextLabel")
+            arrowLbl.Size = UDim2.new(0, 20, 1, 0)
+            arrowLbl.Position = UDim2.new(1, -30, 0, 0)
+            arrowLbl.BackgroundTransparency = 1
+            arrowLbl.Text = "›"
+            arrowLbl.TextSize = 18
+            arrowLbl.TextColor3 = Theme.TextSecondary
+            arrowLbl.Font = Enum.Font.GothamBold
+            arrowLbl.Parent = card
+
+            btn.MouseEnter:Connect(function() tw(card, {BackgroundColor3 = Theme.CardHover}, 0.1) end)
+            btn.MouseLeave:Connect(function() tw(card, {BackgroundColor3 = Theme.CardBG}, 0.1) end)
+            btn.MouseButton1Click:Connect(function()
+                if callback then pcall(callback) end
             end)
         end
 
