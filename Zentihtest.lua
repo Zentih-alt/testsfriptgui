@@ -130,27 +130,6 @@ function Solar.CreateWindow(config)
     homeBtn.Parent = groupyBar
     Instance.new("UICorner", homeBtn).CornerRadius = UDim.new(0, 5)
 
-    -- Top Tabs Container
-    local topTabsScroll = Instance.new("ScrollingFrame")
-    topTabsScroll.Size = UDim2.new(1, -148, 1, 0)
-    topTabsScroll.Position = UDim2.new(0, 84, 0, 0)
-    topTabsScroll.BackgroundTransparency = 1
-    topTabsScroll.BorderSizePixel = 0
-    topTabsScroll.ScrollBarThickness = 0
-    topTabsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-    topTabsScroll.Parent = groupyBar
-
-    local topTabsLayout = Instance.new("UIListLayout")
-    topTabsLayout.FillDirection = Enum.FillDirection.Horizontal
-    topTabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    topTabsLayout.Padding = UDim.new(0, 5)
-    topTabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    topTabsLayout.Parent = topTabsScroll
-
-    topTabsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        topTabsScroll.CanvasSize = UDim2.new(0, topTabsLayout.AbsoluteContentSize.X + 10, 0, 0)
-    end)
-
     -- Window Controls (- ✕)
     local winControls = Instance.new("Frame")
     winControls.Size = UDim2.new(0, 60, 1, 0)
@@ -337,34 +316,6 @@ function Solar.CreateWindow(config)
         tabLbl.TextXAlignment = Enum.TextXAlignment.Left
         tabLbl.Parent = tabBtn
 
-        -- Top App Tab Item
-        local topTab = Instance.new("Frame")
-        topTab.Size = UDim2.new(0, 120, 0, 26)
-        topTab.BackgroundColor3 = Theme.GroupyTabInactive
-        topTab.Parent = topTabsScroll
-        Instance.new("UICorner", topTab).CornerRadius = UDim.new(0, 5)
-
-        local topTabBtn = Instance.new("TextButton")
-        topTabBtn.Size = UDim2.new(1, -18, 1, 0)
-        topTabBtn.Position = UDim2.new(0, 6, 0, 0)
-        topTabBtn.BackgroundTransparency = 1
-        topTabBtn.Text = tabName
-        topTabBtn.TextSize = 11
-        topTabBtn.TextColor3 = Theme.TextSecondary
-        topTabBtn.Font = Enum.Font.Gotham
-        topTabBtn.TextXAlignment = Enum.TextXAlignment.Left
-        topTabBtn.TextTruncate = Enum.TextTruncate.AtEnd
-        topTabBtn.Parent = topTab
-
-        local topTabClose = Instance.new("TextButton")
-        topTabClose.Size = UDim2.new(0, 14, 0, 14)
-        topTabClose.Position = UDim2.new(1, -16, 0.5, -7)
-        topTabClose.BackgroundTransparency = 1
-        topTabClose.Text = "✕"
-        topTabClose.TextSize = 9
-        topTabClose.TextColor3 = Theme.TextSecondary
-        topTabClose.Parent = topTab
-
         local pageScroll = Instance.new("ScrollingFrame")
         pageScroll.Size = UDim2.new(1, 0, 1, 0)
         pageScroll.BackgroundTransparency = 1
@@ -405,8 +356,6 @@ function Solar.CreateWindow(config)
                 tw(t.Label, {TextColor3 = Theme.TextSecondary}, 0.15)
                 tw(t.Icon, {TextColor3 = Theme.TextSecondary}, 0.15)
                 tw(t.Btn, {BackgroundTransparency = 1}, 0.15)
-                t.TopTab.BackgroundColor3 = Theme.GroupyTabInactive
-                t.TopTabBtn.TextColor3 = Theme.TextSecondary
             end
             pageScroll.Visible = true
             headerTitle.Text = tabName
@@ -414,21 +363,12 @@ function Solar.CreateWindow(config)
             tw(tabLbl, {TextColor3 = Theme.TextPrimary}, 0.15)
             tw(tabIcon, {TextColor3 = Theme.Accent}, 0.15)
             tw(tabBtn, {BackgroundTransparency = 0.7, BackgroundColor3 = Theme.CardBG}, 0.15)
-            topTab.BackgroundColor3 = Theme.GroupyTabActive
-            topTabBtn.TextColor3 = Theme.TextPrimary
         end
 
         tabBtn.MouseButton1Click:Connect(activate)
-        topTabBtn.MouseButton1Click:Connect(activate)
-        topTabClose.MouseButton1Click:Connect(function()
-            topTab:Destroy()
-            tabBtn:Destroy()
-            pageScroll:Destroy()
-        end)
 
         table.insert(tabsList, {
-            Btn = tabBtn, Pill = activePill, Label = tabLbl, Icon = tabIcon,
-            TopTab = topTab, TopTabBtn = topTabBtn, Page = pageScroll
+            Btn = tabBtn, Pill = activePill, Label = tabLbl, Icon = tabIcon, Page = pageScroll
         })
 
         if #tabsList == 1 then activate() end
@@ -436,15 +376,15 @@ function Solar.CreateWindow(config)
 
         local function createCard(height)
             local card = Instance.new("Frame")
-            card.Size = UDim2.new(1, 0, 0, height or 52)
+            card.Size = UDim2.new(1, 0, 0, height or 60)
             card.BackgroundColor3 = Theme.CardBG
             card.ClipsDescendants = false
             card.Parent = pageScroll
-            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 4)
+            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
             local stroke = Instance.new("UIStroke")
             stroke.Color = Theme.CardBorder
-            stroke.Thickness = 1
-            stroke.Transparency = 0.15
+            stroke.Thickness = 1.2
+            stroke.Transparency = 0
             stroke.Parent = card
             return card, stroke
         end
@@ -466,7 +406,7 @@ function Solar.CreateWindow(config)
         -- DROPDOWN ENGINE (ปรับให้เปิดขยายขึ้นด้านบน ตามวงสีเขียวในรูปภาพ)
         -- =========================================================================
         function TabAPI:AddDropdown(title, desc, options, default, callback, flag)
-            local card = createCard(48)
+            local card = createCard(60)
 
             local tLbl = Instance.new("TextLabel")
             tLbl.Size = UDim2.new(0, 140, 1, 0)
@@ -677,27 +617,27 @@ function Solar.CreateWindow(config)
 
         -- BUTTON CARD
         function TabAPI:AddButton(title, desc, callback)
-            local card = createCard(desc and 54 or 46)
+            local card = createCard(desc and 62 or 54)
 
             local tLbl = Instance.new("TextLabel")
-            tLbl.Size = UDim2.new(0.5, -16, 0, desc and 18 or 0)
-            tLbl.Position = UDim2.new(0, 14, 0.5, desc and -16 or 0)
-            if not desc then tLbl.Size = UDim2.new(0.5, -16, 1, 0) tLbl.Position = UDim2.new(0, 14, 0, 0) end
+            tLbl.Size = UDim2.new(0.5, -16, 0, desc and 20 or 0)
+            tLbl.Position = UDim2.new(0, 16, 0.5, desc and -18 or 0)
+            if not desc then tLbl.Size = UDim2.new(0.5, -16, 1, 0) tLbl.Position = UDim2.new(0, 16, 0, 0) end
             tLbl.BackgroundTransparency = 1
             tLbl.Text = title
-            tLbl.TextSize = 13
+            tLbl.TextSize = 14
             tLbl.TextColor3 = Theme.TextPrimary
-            tLbl.Font = Enum.Font.GothamMedium
+            tLbl.Font = Enum.Font.GothamBold
             tLbl.TextXAlignment = Enum.TextXAlignment.Left
             tLbl.Parent = card
 
             if desc then
                 local dLbl = Instance.new("TextLabel")
-                dLbl.Size = UDim2.new(0.5, -16, 0, 14)
-                dLbl.Position = UDim2.new(0, 14, 0.5, 2)
+                dLbl.Size = UDim2.new(0.5, -16, 0, 16)
+                dLbl.Position = UDim2.new(0, 16, 0.5, 4)
                 dLbl.BackgroundTransparency = 1
                 dLbl.Text = desc
-                dLbl.TextSize = 10
+                dLbl.TextSize = 11
                 dLbl.TextColor3 = Theme.TextSecondary
                 dLbl.Font = Enum.Font.Gotham
                 dLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -705,15 +645,15 @@ function Solar.CreateWindow(config)
             end
 
             local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(0, 95, 0, 30)
-            btn.Position = UDim2.new(1, -109, 0.5, -15)
+            btn.Size = UDim2.new(0, 110, 0, 36)
+            btn.Position = UDim2.new(1, -126, 0.5, -18)
             btn.BackgroundColor3 = Theme.Accent
             btn.Text = "Execute"
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            btn.Font = Enum.Font.GothamMedium
-            btn.TextSize = 12
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 13
             btn.Parent = card
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
             btn.MouseButton1Click:Connect(function()
                 tw(btn, {BackgroundColor3 = Theme.AccentHover}, 0.08)
@@ -846,27 +786,27 @@ function Solar.CreateWindow(config)
         -- =========================================================================
         function TabAPI:AddToggle(title, desc, default, callback, flag)
             local state = default and true or false
-            local card = createCard(desc and 54 or 46)
+            local card = createCard(desc and 62 or 54)
 
             local tLbl = Instance.new("TextLabel")
-            tLbl.Size = UDim2.new(1, -80, 0, desc and 18 or 0)
-            tLbl.Position = UDim2.new(0, 14, 0.5, desc and -16 or 0)
-            if not desc then tLbl.Size = UDim2.new(1, -80, 1, 0) tLbl.Position = UDim2.new(0, 14, 0, 0) end
+            tLbl.Size = UDim2.new(1, -90, 0, desc and 20 or 0)
+            tLbl.Position = UDim2.new(0, 16, 0.5, desc and -18 or 0)
+            if not desc then tLbl.Size = UDim2.new(1, -90, 1, 0) tLbl.Position = UDim2.new(0, 16, 0, 0) end
             tLbl.BackgroundTransparency = 1
             tLbl.Text = title
-            tLbl.TextSize = 13
+            tLbl.TextSize = 14
             tLbl.TextColor3 = Theme.TextPrimary
-            tLbl.Font = Enum.Font.GothamMedium
+            tLbl.Font = Enum.Font.GothamBold
             tLbl.TextXAlignment = Enum.TextXAlignment.Left
             tLbl.Parent = card
 
             if desc then
                 local dLbl = Instance.new("TextLabel")
-                dLbl.Size = UDim2.new(1, -80, 0, 14)
-                dLbl.Position = UDim2.new(0, 14, 0.5, 2)
+                dLbl.Size = UDim2.new(1, -90, 0, 16)
+                dLbl.Position = UDim2.new(0, 16, 0.5, 4)
                 dLbl.BackgroundTransparency = 1
                 dLbl.Text = desc
-                dLbl.TextSize = 10
+                dLbl.TextSize = 11
                 dLbl.TextColor3 = Theme.TextSecondary
                 dLbl.Font = Enum.Font.Gotham
                 dLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -874,15 +814,15 @@ function Solar.CreateWindow(config)
             end
 
             local switchTrack = Instance.new("Frame")
-            switchTrack.Size = UDim2.new(0, 42, 0, 24)
-            switchTrack.Position = UDim2.new(1, -56, 0.5, -12)
+            switchTrack.Size = UDim2.new(0, 50, 0, 28)
+            switchTrack.Position = UDim2.new(1, -66, 0.5, -14)
             switchTrack.BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff
             switchTrack.Parent = card
             Instance.new("UICorner", switchTrack).CornerRadius = UDim.new(1, 0)
 
             local switchKnob = Instance.new("Frame")
-            switchKnob.Size = UDim2.new(0, 18, 0, 18)
-            switchKnob.Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+            switchKnob.Size = UDim2.new(0, 22, 0, 22)
+            switchKnob.Position = state and UDim2.new(1, -25, 0.5, -11) or UDim2.new(0, 3, 0.5, -11)
             switchKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             switchKnob.Parent = switchTrack
             Instance.new("UICorner", switchKnob).CornerRadius = UDim.new(1, 0)
@@ -895,7 +835,7 @@ function Solar.CreateWindow(config)
 
             local function render()
                 tw(switchTrack, {BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff}, 0.15)
-                tw(switchKnob, {Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}, 0.15)
+                tw(switchKnob, {Position = state and UDim2.new(1, -25, 0.5, -11) or UDim2.new(0, 3, 0.5, -11)}, 0.15)
             end
 
             hitBtn.MouseButton1Click:Connect(function()
@@ -919,7 +859,7 @@ function Solar.CreateWindow(config)
         -- ARROW / EXPAND ROW (แถวคลิกได้ พร้อมลูกศร > ด้านขวา ตามตัวอย่าง)
         -- =========================================================================
         function TabAPI:AddArrow(title, desc, callback)
-            local card = createCard(desc and 54 or 46)
+            local card = createCard(desc and 62 or 54)
 
             local btn = Instance.new("TextButton")
             btn.Size = UDim2.new(1, 0, 1, 0)
@@ -929,24 +869,24 @@ function Solar.CreateWindow(config)
             btn.Parent = card
 
             local tLbl = Instance.new("TextLabel")
-            tLbl.Size = UDim2.new(1, -50, 0, desc and 18 or 0)
-            tLbl.Position = UDim2.new(0, 14, 0.5, desc and -16 or 0)
-            if not desc then tLbl.Size = UDim2.new(1, -50, 1, 0) tLbl.Position = UDim2.new(0, 14, 0, 0) end
+            tLbl.Size = UDim2.new(1, -54, 0, desc and 20 or 0)
+            tLbl.Position = UDim2.new(0, 16, 0.5, desc and -18 or 0)
+            if not desc then tLbl.Size = UDim2.new(1, -54, 1, 0) tLbl.Position = UDim2.new(0, 16, 0, 0) end
             tLbl.BackgroundTransparency = 1
             tLbl.Text = title
-            tLbl.TextSize = 13
+            tLbl.TextSize = 14
             tLbl.TextColor3 = Theme.TextPrimary
-            tLbl.Font = Enum.Font.GothamMedium
+            tLbl.Font = Enum.Font.GothamBold
             tLbl.TextXAlignment = Enum.TextXAlignment.Left
             tLbl.Parent = card
 
             if desc then
                 local dLbl = Instance.new("TextLabel")
-                dLbl.Size = UDim2.new(1, -50, 0, 14)
-                dLbl.Position = UDim2.new(0, 14, 0.5, 2)
+                dLbl.Size = UDim2.new(1, -54, 0, 16)
+                dLbl.Position = UDim2.new(0, 16, 0.5, 4)
                 dLbl.BackgroundTransparency = 1
                 dLbl.Text = desc
-                dLbl.TextSize = 10
+                dLbl.TextSize = 11
                 dLbl.TextColor3 = Theme.TextSecondary
                 dLbl.Font = Enum.Font.Gotham
                 dLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -954,11 +894,11 @@ function Solar.CreateWindow(config)
             end
 
             local arrowLbl = Instance.new("TextLabel")
-            arrowLbl.Size = UDim2.new(0, 20, 1, 0)
-            arrowLbl.Position = UDim2.new(1, -30, 0, 0)
+            arrowLbl.Size = UDim2.new(0, 22, 1, 0)
+            arrowLbl.Position = UDim2.new(1, -34, 0, 0)
             arrowLbl.BackgroundTransparency = 1
             arrowLbl.Text = "›"
-            arrowLbl.TextSize = 18
+            arrowLbl.TextSize = 20
             arrowLbl.TextColor3 = Theme.TextSecondary
             arrowLbl.Font = Enum.Font.GothamBold
             arrowLbl.Parent = card
