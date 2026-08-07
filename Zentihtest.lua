@@ -21,20 +21,20 @@ local function tw(obj, props, duration, easingStyle, easingDir)
 end
 
 local Theme = {
-    MainBG = Color3.fromRGB(246, 246, 248),
-    SidebarBG = Color3.fromRGB(238, 238, 242),
-    GroupyHeaderBG = Color3.fromRGB(235, 226, 238),
-    GroupyTabActive = Color3.fromRGB(255, 255, 255),
-    GroupyTabInactive = Color3.fromRGB(218, 208, 222),
-    CardBG = Color3.fromRGB(255, 255, 255),
-    CardBorder = Color3.fromRGB(225, 225, 232),
-    CardHover = Color3.fromRGB(250, 250, 254),
-    TextPrimary = Color3.fromRGB(25, 25, 30),
-    TextSecondary = Color3.fromRGB(115, 115, 125),
-    Accent = Color3.fromRGB(0, 95, 184),
-    AccentHover = Color3.fromRGB(24, 115, 204),
-    DropdownHover = Color3.fromRGB(238, 244, 255),
-    ToggleOff = Color3.fromRGB(210, 210, 220)
+    MainBG = Color3.fromRGB(21, 23, 31),
+    SidebarBG = Color3.fromRGB(24, 26, 35),
+    GroupyHeaderBG = Color3.fromRGB(24, 26, 35),
+    GroupyTabActive = Color3.fromRGB(35, 38, 50),
+    GroupyTabInactive = Color3.fromRGB(28, 30, 40),
+    CardBG = Color3.fromRGB(30, 33, 44),
+    CardBorder = Color3.fromRGB(45, 48, 62),
+    CardHover = Color3.fromRGB(36, 39, 52),
+    TextPrimary = Color3.fromRGB(240, 241, 245),
+    TextSecondary = Color3.fromRGB(148, 152, 166),
+    Accent = Color3.fromRGB(70, 130, 235),
+    AccentHover = Color3.fromRGB(90, 148, 245),
+    DropdownHover = Color3.fromRGB(40, 44, 58),
+    ToggleOff = Color3.fromRGB(58, 62, 78)
 }
 
 local Solar = {}
@@ -380,11 +380,11 @@ function Solar.CreateWindow(config)
             card.BackgroundColor3 = Theme.CardBG
             card.ClipsDescendants = false
             card.Parent = pageScroll
-            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 4)
+            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 10)
             local stroke = Instance.new("UIStroke")
             stroke.Color = Theme.CardBorder
             stroke.Thickness = 1
-            stroke.Transparency = 0.15
+            stroke.Transparency = 0.5
             stroke.Parent = card
             return card, stroke
         end
@@ -456,7 +456,7 @@ function Solar.CreateWindow(config)
             arrowIcon.TextSize = 9
             arrowIcon.Parent = box
 
-            local listHeight = math.min(#options, 5) * 32 + 8
+            local listHeight = 220
 
             -- Dropdown Popup Container (กว้างคงที่เกือบเต็ม container, พื้นหลังโปร่งใสเล็กน้อย)
             local dropList = Instance.new("Frame")
@@ -511,12 +511,10 @@ function Solar.CreateWindow(config)
                         btnObj.Btn.BackgroundColor3 = Theme.DropdownHover
                         btnObj.Lbl.TextColor3 = Theme.Accent
                         btnObj.Lbl.Font = Enum.Font.GothamBold
-                        btnObj.Check.Visible = true
                     else
                         btnObj.Btn.BackgroundColor3 = Theme.CardBG
                         btnObj.Lbl.TextColor3 = Theme.TextPrimary
                         btnObj.Lbl.Font = Enum.Font.Gotham
-                        btnObj.Check.Visible = false
                     end
                 end
             end
@@ -539,7 +537,7 @@ function Solar.CreateWindow(config)
                 Instance.new("UICorner", optBtn).CornerRadius = UDim.new(0, 4)
 
                 local optLbl = Instance.new("TextLabel")
-                optLbl.Size = UDim2.new(1, -28, 1, 0)
+                optLbl.Size = UDim2.new(1, -16, 1, 0)
                 optLbl.Position = UDim2.new(0, 8, 0, 0)
                 optLbl.BackgroundTransparency = 1
                 optLbl.Text = tostring(opt)
@@ -550,19 +548,7 @@ function Solar.CreateWindow(config)
                 optLbl.ZIndex = 100003
                 optLbl.Parent = optBtn
 
-                local checkIcon = Instance.new("TextLabel")
-                checkIcon.Size = UDim2.new(0, 16, 1, 0)
-                checkIcon.Position = UDim2.new(1, -20, 0, 0)
-                checkIcon.BackgroundTransparency = 1
-                checkIcon.Text = "✓"
-                checkIcon.TextSize = 11
-                checkIcon.TextColor3 = Theme.Accent
-                checkIcon.Font = Enum.Font.GothamBold
-                checkIcon.Visible = (opt == selected)
-                checkIcon.ZIndex = 100003
-                checkIcon.Parent = optBtn
-
-                optionBtns[opt] = { Btn = optBtn, Lbl = optLbl, Check = checkIcon }
+                optionBtns[opt] = { Btn = optBtn, Lbl = optLbl }
 
                 optBtn.MouseEnter:Connect(function()
                     if opt ~= selected then
