@@ -286,7 +286,7 @@ function Solar.CreateWindow(config)
         tabBtn.BackgroundTransparency = 1
         tabBtn.Text = ""
         tabBtn.Parent = navScroll
-        Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 5)
+        Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 8)
 
         local activePill = Instance.new("Frame")
         activePill.Size = UDim2.new(0, 3, 0, 14)
@@ -376,7 +376,7 @@ function Solar.CreateWindow(config)
 
         local function createCard(height)
             local card = Instance.new("Frame")
-            card.Size = UDim2.new(1, 0, 0, height or 52)
+            card.Size = UDim2.new(1, 0, 0, height or 56)
             card.BackgroundColor3 = Theme.CardBG
             card.ClipsDescendants = false
             card.Parent = pageScroll
@@ -384,7 +384,7 @@ function Solar.CreateWindow(config)
             local stroke = Instance.new("UIStroke")
             stroke.Color = Theme.CardBorder
             stroke.Thickness = 1
-            stroke.Transparency = 0.5
+            stroke.Transparency = 1
             stroke.Parent = card
             return card, stroke
         end
@@ -422,17 +422,18 @@ function Solar.CreateWindow(config)
             local selected = default or options[1] or "Select"
             local open = false
 
-            -- กล่อง Dropdown ขนาดมาตรฐาน (Standard)
+            -- กล่อง Dropdown ขนาดมาตรฐาน (Standard) สไตล์เรียบ ไม่มีขอบ
             local box = Instance.new("TextButton")
-            box.Size = UDim2.new(0, 150, 0, 30)
-            box.Position = UDim2.new(1, -164, 0.5, -15)
-            box.BackgroundColor3 = Theme.MainBG
+            box.Size = UDim2.new(0, 150, 0, 32)
+            box.Position = UDim2.new(1, -166, 0.5, -16)
+            box.BackgroundColor3 = Theme.SidebarBG
             box.Text = ""
             box.AutoButtonColor = false
             box.Parent = card
-            Instance.new("UICorner", box).CornerRadius = UDim.new(0, 5)
+            Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
             local boxStroke = Instance.new("UIStroke")
             boxStroke.Color = Theme.CardBorder
+            boxStroke.Transparency = 1
             boxStroke.Parent = box
 
             local boxLbl = Instance.new("TextLabel")
@@ -451,9 +452,10 @@ function Solar.CreateWindow(config)
             arrowIcon.Size = UDim2.new(0, 16, 1, 0)
             arrowIcon.Position = UDim2.new(1, -18, 0, 0)
             arrowIcon.BackgroundTransparency = 1
-            arrowIcon.Text = "▲"
+            arrowIcon.Text = "▾"
             arrowIcon.TextColor3 = Theme.TextSecondary
-            arrowIcon.TextSize = 9
+            arrowIcon.TextSize = 12
+            arrowIcon.Font = Enum.Font.GothamBold
             arrowIcon.Parent = box
 
             local listHeight = 220
@@ -467,7 +469,7 @@ function Solar.CreateWindow(config)
             dropList.Visible = false
             dropList.ZIndex = 100000
             dropList.Parent = sg
-            Instance.new("UICorner", dropList).CornerRadius = UDim.new(0, 6)
+            Instance.new("UICorner", dropList).CornerRadius = UDim.new(0, 10)
             local listStroke = Instance.new("UIStroke")
             listStroke.Color = Theme.CardBorder
             listStroke.Thickness = 1.2
@@ -522,7 +524,7 @@ function Solar.CreateWindow(config)
             local function closeList()
                 open = false
                 tw(arrowIcon, {Rotation = 0}, 0.15)
-                tw(boxStroke, {Color = Theme.CardBorder}, 0.15)
+                tw(boxStroke, {Color = Theme.CardBorder, Transparency = 1}, 0.15)
                 dropList.Visible = false
             end
 
@@ -534,7 +536,7 @@ function Solar.CreateWindow(config)
                 optBtn.AutoButtonColor = false
                 optBtn.ZIndex = 100002
                 optBtn.Parent = listScroll
-                Instance.new("UICorner", optBtn).CornerRadius = UDim.new(0, 4)
+                Instance.new("UICorner", optBtn).CornerRadius = UDim.new(0, 6)
 
                 local optLbl = Instance.new("TextLabel")
                 optLbl.Size = UDim2.new(1, -16, 1, 0)
@@ -585,7 +587,7 @@ function Solar.CreateWindow(config)
                     dropList.Position = UDim2.new(0, cardAbs.X + 10, 0, abs.Y - listHeight - 4)
                     dropList.Visible = true
                     tw(arrowIcon, {Rotation = 180}, 0.15)
-                    tw(boxStroke, {Color = Theme.Accent}, 0.15)
+                    tw(boxStroke, {Color = Theme.Accent, Transparency = 0}, 0.15)
                     activeCloseDropdown = closeList
                 else
                     closeList()
@@ -642,7 +644,7 @@ function Solar.CreateWindow(config)
             btn.Font = Enum.Font.GothamMedium
             btn.TextSize = 12
             btn.Parent = card
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
 
             btn.MouseButton1Click:Connect(function()
                 tw(btn, {BackgroundColor3 = Theme.AccentHover}, 0.08)
@@ -749,7 +751,7 @@ function Solar.CreateWindow(config)
             inpWrap.Position = UDim2.new(1, -164, 0.5, -14)
             inpWrap.BackgroundColor3 = Theme.MainBG
             inpWrap.Parent = card
-            Instance.new("UICorner", inpWrap).CornerRadius = UDim.new(0, 4)
+            Instance.new("UICorner", inpWrap).CornerRadius = UDim.new(0, 8)
             Instance.new("UIStroke", inpWrap).Color = Theme.CardBorder
 
             local inpBox = Instance.new("TextBox")
