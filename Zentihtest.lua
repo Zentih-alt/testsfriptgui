@@ -422,18 +422,20 @@ function Solar.CreateWindow(config)
             local selected = default or options[1] or "Select"
             local open = false
 
-            -- กล่อง Dropdown ขนาดมาตรฐาน (Standard) สไตล์เรียบ ไม่มีขอบ
+            -- กล่อง Dropdown — transparency ตรงกับต้นฉบับ (0.9 / stroke 0.5)
             local box = Instance.new("TextButton")
             box.Size = UDim2.new(0, 150, 0, 32)
             box.Position = UDim2.new(1, -166, 0.5, -16)
-            box.BackgroundColor3 = Theme.SidebarBG
+            box.BackgroundColor3 = Theme.CardBG
+            box.BackgroundTransparency = 0.9
             box.Text = ""
             box.AutoButtonColor = false
             box.Parent = card
-            Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
+            Instance.new("UICorner", box).CornerRadius = UDim.new(0, 5)
             local boxStroke = Instance.new("UIStroke")
             boxStroke.Color = Theme.CardBorder
-            boxStroke.Transparency = 1
+            boxStroke.Transparency = 0.5
+            boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             boxStroke.Parent = box
 
             local boxLbl = Instance.new("TextLabel")
@@ -460,41 +462,45 @@ function Solar.CreateWindow(config)
 
             local listHeight = 220
 
-            -- Dropdown Popup Container (กว้างคงที่เกือบเต็ม container, พื้นหลังโปร่งใสเล็กน้อย)
+            -- Dropdown Popup Container — ใช้ค่าจากไฟล์อ้างอิงของนาย (มุมโค้ง 7, เงา, สโครลบาร์แบบเขา)
             local dropList = Instance.new("Frame")
             dropList.Name = "DropdownList"
             dropList.Size = UDim2.new(0, 150, 0, listHeight)
             dropList.BackgroundColor3 = Theme.CardBG
-            dropList.BackgroundTransparency = 0.08
+            dropList.BackgroundTransparency = 0
             dropList.Visible = false
             dropList.ZIndex = 100000
             dropList.Parent = sg
-            Instance.new("UICorner", dropList).CornerRadius = UDim.new(0, 10)
+            Instance.new("UICorner", dropList).CornerRadius = UDim.new(0, 7)
             local listStroke = Instance.new("UIStroke")
             listStroke.Color = Theme.CardBorder
-            listStroke.Thickness = 1.2
+            listStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             listStroke.Parent = dropList
 
-            -- Shadow Effect
+            -- Shadow Effect (ค่าตรงจากต้นฉบับ: ขยาย 30px, offset -15, transparency 0.1)
             local dropShadow = Instance.new("ImageLabel")
-            dropShadow.Size = UDim2.new(1, 20, 1, 20)
-            dropShadow.Position = UDim2.new(0, -10, 0, -8)
+            dropShadow.Size = UDim2.new(1, 30, 1, 30)
+            dropShadow.Position = UDim2.new(0, -15, 0, -15)
             dropShadow.BackgroundTransparency = 1
-            dropShadow.Image = "rbxassetid://5554236805"
+            dropShadow.Image = "http://www.roblox.com/asset/?id=5554236805"
             dropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-            dropShadow.ImageTransparency = 0.8
+            dropShadow.ImageTransparency = 0.1
             dropShadow.ScaleType = Enum.ScaleType.Slice
             dropShadow.SliceCenter = Rect.new(23, 23, 277, 277)
             dropShadow.ZIndex = 99999
             dropShadow.Parent = dropList
 
             local listScroll = Instance.new("ScrollingFrame")
-            listScroll.Size = UDim2.new(1, -4, 1, -6)
-            listScroll.Position = UDim2.new(0, 2, 0, 3)
+            listScroll.Size = UDim2.new(1, -5, 1, -10)
+            listScroll.Position = UDim2.new(0, 5, 0, 5)
             listScroll.BackgroundTransparency = 1
             listScroll.BorderSizePixel = 0
-            listScroll.ScrollBarThickness = 2
-            listScroll.ScrollBarImageColor3 = Theme.CardBorder
+            listScroll.BottomImage = "rbxassetid://6889812791"
+            listScroll.MidImage = "rbxassetid://6889812721"
+            listScroll.TopImage = "rbxassetid://6276641225"
+            listScroll.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+            listScroll.ScrollBarImageTransparency = 0.95
+            listScroll.ScrollBarThickness = 4
             listScroll.CanvasSize = UDim2.new(0, 0, 0, #options * 32)
             listScroll.ZIndex = 100001
             listScroll.Parent = dropList
@@ -524,7 +530,7 @@ function Solar.CreateWindow(config)
             local function closeList()
                 open = false
                 tw(arrowIcon, {Rotation = 0}, 0.15)
-                tw(boxStroke, {Color = Theme.CardBorder, Transparency = 1}, 0.15)
+                tw(boxStroke, {Color = Theme.CardBorder, Transparency = 0.5}, 0.15)
                 dropList.Visible = false
             end
 
