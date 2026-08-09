@@ -1,13 +1,26 @@
+local function LoadSolar()
 --[[
-    Solar UI Library v4 (Fluent Style Refined)
-    
-    Updated & Fixed:
-      - Removed top-left Watermark chip
-      - Removed top-left Window User Profile / Sub-header chip
-      - Removed Switch component (Consolidated to Fluent Style Toggle)
-      - Redesigned UI controls to match Fluent UI design system
-      - Fixed Dropdown/ComboBox overlay & input hanging issues
-      - Fixed ColorPicker state management
+    Solar UI Library v3
+
+    Corner radii toned down (not razor-sharp, not pill-rounded) to match
+    the reference more closely.
+
+    Systems included, based on what full-featured Roblox UI libraries
+    (Rayfield, Fluent, Orion, KeyForge, etc.) ship with:
+      - Window: title/subtitle, drag, minimize
+      - Sidebar tabs with icons
+      - Sections, Buttons (expandable), Toggles, Sliders, Dropdowns,
+        Keybinds, Text Inputs, Color Pickers, plain Labels
+      - Notify() — toast notification system (bottom-right, auto-dismiss)
+      - Flag-based Config Save/Load — every interactive element can take
+        a `Flag`, and Window:SaveConfig(name) / Window:LoadConfig(name)
+        persists all flagged values to a file via writefile/readfile
+        (falls back gracefully if the executor doesn't support them)
+      - Window:Destroy() — full cleanup
+
+    Not included on purpose: a "key system" / remote auth gate. That's a
+    licensing feature you'd wire up yourself against your own backend —
+    happy to help with the UI side of it if you build one.
 ]]
 
 local UserInputService = game:GetService("UserInputService")
@@ -18,34 +31,34 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
---// Theme (Fluent UI Palette) ----------------------------------------------
+--// Theme --------------------------------------------------------------
 local Theme = {
-    Background    = Color3.fromRGB(20, 20, 20),
-    Sidebar       = Color3.fromRGB(26, 26, 26),
-    TopBar        = Color3.fromRGB(26, 26, 26),
-    Card          = Color3.fromRGB(32, 32, 32),
-    CardHover     = Color3.fromRGB(38, 38, 38),
-    Stroke        = Color3.fromRGB(45, 45, 45),
-    Accent        = Color3.fromRGB(0, 120, 212), -- Fluent Blue
-    AccentHover   = Color3.fromRGB(24, 134, 222),
-    TextPrimary   = Color3.fromRGB(255, 255, 255),
-    TextSecondary = Color3.fromRGB(160, 160, 160),
-    TextTab       = Color3.fromRGB(180, 180, 180),
-    TextTabActive = Color3.fromRGB(255, 255, 255),
-    ToggleOff     = Color3.fromRGB(48, 48, 48),
-    ToggleKnob    = Color3.fromRGB(200, 200, 200),
-    SliderTrack   = Color3.fromRGB(48, 48, 48),
-    Success       = Color3.fromRGB(16, 124, 65),
-    Error         = Color3.fromRGB(232, 17, 35),
+    Background    = Color3.fromRGB(18, 21, 29),
+    Sidebar       = Color3.fromRGB(14, 17, 24),
+    TopBar        = Color3.fromRGB(14, 17, 24),
+    Card          = Color3.fromRGB(25, 29, 39),
+    CardHover     = Color3.fromRGB(30, 35, 46),
+    Stroke        = Color3.fromRGB(34, 38, 50),
+    Accent        = Color3.fromRGB(64, 132, 245),
+    TextPrimary   = Color3.fromRGB(238, 239, 243),
+    TextSecondary = Color3.fromRGB(142, 148, 163),
+    TextTab       = Color3.fromRGB(150, 156, 170),
+    TextTabActive = Color3.fromRGB(240, 241, 245),
+    ToggleOff     = Color3.fromRGB(52, 57, 70),
+    ToggleKnob    = Color3.fromRGB(255, 255, 255),
+    SliderTrack   = Color3.fromRGB(46, 51, 64),
+    Success       = Color3.fromRGB(72, 187, 120),
+    Error         = Color3.fromRGB(224, 92, 92),
 }
 
---// Fluent Corner Radii
+--// Corner radii — moderate, not sharp / not pill-shaped
 local R = {
-    Window  = 8,
-    CtrlBtn = 4,
-    Card    = 6,
-    Control = 4,
-    Knob    = 999,
+    Window = 10,
+    TopChip = 7,
+    CtrlBtn = 6,
+    Card    = 7,
+    Control = 6, -- toggle track, dropdown box, input box, etc.
+    Knob    = 999, -- circular knobs stay fully round on purpose
 }
 
 --// Helpers --------------------------------------------------------------
@@ -59,7 +72,7 @@ end
 local function corner(r) return create("UICorner", { CornerRadius = UDim.new(0, r or R.Card) }) end
 local function stroke(color, t) return create("UIStroke", { Color = color or Theme.Stroke, Thickness = t or 1 }) end
 local function tween(obj, props, time)
-    TweenService:Create(obj, TweenInfo.new(time or 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
+    TweenService:Create(obj, TweenInfo.new(time or 0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
 
 local function safeWritefile(path, data)
@@ -80,10 +93,22 @@ end
 local Solar = {}
 Solar.__index = Solar
 
+--// Global open-panel registry (accordion behavior for dropdowns/colorpickers)
+local OpenPanels = {}
+local function registerPanel(closeFn)
+    OpenPanels[#OpenPanels + 1] = closeFn
+end
+local function closeAllPanelsExcept(exceptFn)
+    for _, fn in ipairs(OpenPanels) do
+        if fn ~= exceptFn then fn() end
+    end
+end
+
 --// Window ----------------------------------------------------------------
 function Solar:CreateWindow(config)
     config = config or {}
-    local title = config.Title or "Solar UI"
+    local title = config.Title or "Solar"
+    local subtitle = config.Subtitle or ""
     local configFolder = config.ConfigFolder or "SolarUI"
 
     local existing = PlayerGui:FindFirstChild("SolarUI")
@@ -100,15 +125,18 @@ function Solar:CreateWindow(config)
 
     local Main = create("Frame", {
         Name = "Main",
-        Size = UDim2.fromOffset(800, 560),
-        Position = UDim2.new(0.5, -400, 0.5, -280),
+        Size = UDim2.fromOffset(800, 600),
+        Position = UDim2.new(0.5, -400, 0.5, -300),
         BackgroundColor3 = Theme.Background,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         Parent = ScreenGui,
     }, { corner(R.Window), stroke(Theme.Stroke, 1) })
 
-    -- Drag System
+    local Connections = {}
+    local function track(conn) Connections[#Connections + 1] = conn; return conn end
+
+    -- drag
     do
         local dragging, dragStart, startPos
         local function update(input)
@@ -116,69 +144,102 @@ function Solar:CreateWindow(config)
             Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
                 startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-        Main.InputBegan:Connect(function(input)
+        track(Main.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
                 dragStart = input.Position
                 startPos = Main.Position
-                input.Changed:Connect(function()
+                track(input.Changed:Connect(function()
                     if input.UserInputState == Enum.UserInputState.End then dragging = false end
-                end)
+                end))
             end
-        end)
-        UserInputService.InputChanged:Connect(function(input)
+        end))
+        track(UserInputService.InputChanged:Connect(function(input)
             if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 update(input)
             end
-        end)
+        end))
     end
 
-    --// Top Bar (Clean Title Header - No user profile chip)
+    --// Top bar
     local TopBar = create("Frame", {
-        Size = UDim2.new(1, 0, 0, 48),
+        Size = UDim2.new(1, 0, 0, 60),
         BackgroundColor3 = Theme.TopBar,
         BorderSizePixel = 0,
         Parent = Main,
     })
-    create("Frame", {
-        Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1),
-        BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = TopBar
-    })
+    create("UIStroke", { Color = Theme.Stroke, Thickness = 1 }).Parent = TopBar
 
-    -- Simple Title Text
+    local LogoChip = create("Frame", {
+        Size = UDim2.fromOffset(32, 32),
+        Position = UDim2.fromOffset(16, 14),
+        BackgroundColor3 = Theme.Accent,
+        Parent = TopBar,
+    }, { corner(R.TopChip) })
     create("TextLabel", {
-        Text = title, Font = Enum.Font.GothamBold, TextSize = 14,
-        TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1, Position = UDim2.fromOffset(18, 0),
-        Size = UDim2.new(0, 400, 1, 0), Parent = TopBar,
+        Text = title:sub(1, 1),
+        Font = Enum.Font.GothamBold, TextSize = 15,
+        TextColor3 = Color3.new(1, 1, 1),
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 1),
+        Parent = LogoChip,
     })
 
-    -- Control Buttons
+    create("TextLabel", {
+        Text = title, Font = Enum.Font.GothamBold, TextSize = 15,
+        TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
+        BackgroundTransparency = 1, Position = UDim2.fromOffset(58, 12),
+        Size = UDim2.fromOffset(400, 18), Parent = TopBar,
+    })
+    create("TextLabel", {
+        Text = subtitle, Font = Enum.Font.Gotham, TextSize = 12,
+        TextColor3 = Theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Left,
+        BackgroundTransparency = 1, Position = UDim2.fromOffset(58, 31),
+        Size = UDim2.fromOffset(400, 16), Parent = TopBar,
+    })
+
     local function ctrlButton(text, xOffset, hoverColor, callback)
         local btn = create("TextButton", {
-            Text = text, Font = Enum.Font.GothamBold, TextSize = 12,
-            TextColor3 = Theme.TextSecondary, BackgroundColor3 = Theme.TopBar,
-            AutoButtonColor = false, Size = UDim2.fromOffset(40, 32),
-            Position = UDim2.new(1, xOffset, 0, 8), Parent = TopBar,
-        }, { corner(R.CtrlBtn) })
-        btn.MouseEnter:Connect(function() tween(btn, { BackgroundColor3 = hoverColor, TextColor3 = Theme.TextPrimary }) end)
-        btn.MouseLeave:Connect(function() tween(btn, { BackgroundColor3 = Theme.TopBar, TextColor3 = Theme.TextSecondary }) end)
+            Text = text, Font = Enum.Font.GothamBold, TextSize = 13,
+            TextColor3 = Theme.TextSecondary, BackgroundColor3 = Theme.Card,
+            AutoButtonColor = false, Size = UDim2.fromOffset(30, 30),
+            Position = UDim2.new(1, xOffset, 0, 15), Parent = TopBar,
+        }, { corner(R.CtrlBtn), stroke(Theme.Stroke, 1) })
+        btn.MouseEnter:Connect(function() tween(btn, { BackgroundColor3 = hoverColor }) end)
+        btn.MouseLeave:Connect(function() tween(btn, { BackgroundColor3 = Theme.Card }) end)
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
 
     local minimized = false
-    ctrlButton("—", -132, Theme.CardHover, function()
+    local maximized = false
+    local restoreSize, restorePos = Main.Size, Main.Position
+
+    ctrlButton("—", -116, Theme.CardHover, function()
         minimized = not minimized
-        Main.Size = minimized and UDim2.fromOffset(800, 48) or UDim2.fromOffset(800, 560)
+        if minimized then
+            restoreSize = Main.Size
+            tween(Main, { Size = UDim2.fromOffset(Main.AbsoluteSize.X, 60) }, 0.15)
+        else
+            tween(Main, { Size = maximized and UDim2.new(1, -40, 1, -40) or restoreSize }, 0.15)
+        end
     end)
-    ctrlButton("▢", -88, Theme.CardHover, function() end)
-    ctrlButton("✕", -44, Theme.Error, function() ScreenGui:Destroy() end)
+    ctrlButton("▢", -78, Theme.CardHover, function()
+        if minimized then return end
+        maximized = not maximized
+        if maximized then
+            restoreSize, restorePos = Main.Size, Main.Position
+            tween(Main, { Size = UDim2.new(1, -40, 1, -40), Position = UDim2.new(0, 20, 0, 20) }, 0.15)
+        else
+            tween(Main, { Size = restoreSize, Position = restorePos }, 0.15)
+        end
+    end)
+    ctrlButton("✕", -40, Theme.Error, function() ScreenGui:Destroy() end)
 
     --// Sidebar
     local Sidebar = create("Frame", {
-        Size = UDim2.new(0, 200, 1, -48),
-        Position = UDim2.new(0, 0, 0, 48),
+        Size = UDim2.new(0, 196, 1, -60),
+        Position = UDim2.new(0, 0, 0, 60),
         BackgroundColor3 = Theme.Sidebar,
         BorderSizePixel = 0,
         Parent = Main,
@@ -187,50 +248,25 @@ function Solar:CreateWindow(config)
         Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0),
         BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = Sidebar,
     })
-    
-    local TabList = create("Frame", {
-        Size = UDim2.new(1, 0, 1, -50),
-        Position = UDim2.fromOffset(0, 50),
-        BackgroundTransparency = 1,
-        Parent = Sidebar
-    })
-    create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }).Parent = TabList
+    create("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }).Parent = Sidebar
     create("UIPadding", {
-        PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10),
-    }).Parent = TabList
+        PaddingTop = UDim.new(0, 14), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6),
+    }).Parent = Sidebar
 
-    -- Tab Search Box
-    local SearchWrap = create("Frame", {
-        Size = UDim2.new(1, -20, 0, 34),
-        Position = UDim2.fromOffset(10, 8),
-        BackgroundColor3 = Theme.Card,
-        Parent = Sidebar,
-    }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-    
-    local SearchBox = create("TextBox", {
-        Text = "", PlaceholderText = "ค้นหาเมนู...",
-        Font = Enum.Font.Gotham, TextSize = 12,
-        TextColor3 = Theme.TextPrimary, PlaceholderColor3 = Theme.TextSecondary,
-        BackgroundTransparency = 1, ClearTextOnFocus = false,
-        Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0),
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = SearchWrap,
-    })
-
-    --// Content Container
+    --// Content
     local Content = create("Frame", {
-        Size = UDim2.new(1, -200, 1, -48),
-        Position = UDim2.new(0, 200, 0, 48),
+        Size = UDim2.new(1, -196, 1, -60),
+        Position = UDim2.new(0, 196, 0, 60),
         BackgroundColor3 = Theme.Background,
         BorderSizePixel = 0,
         Parent = Main,
     })
 
-    --// Notification Holder (Bottom Right)
+    --// Notification layer (top-level, screen-anchored, bottom-right)
     local NotifyHolder = create("Frame", {
         AnchorPoint = Vector2.new(1, 1),
         Position = UDim2.new(1, -20, 1, -20),
-        Size = UDim2.fromOffset(280, 400),
+        Size = UDim2.fromOffset(300, 400),
         BackgroundTransparency = 1,
         Parent = ScreenGui,
     })
@@ -242,17 +278,11 @@ function Solar:CreateWindow(config)
     }).Parent = NotifyHolder
 
     local Window = setmetatable({
-        ScreenGui = ScreenGui, Main = Main, Sidebar = Sidebar, TabList = TabList, Content = Content,
+        ScreenGui = ScreenGui, Main = Main, Sidebar = Sidebar, Content = Content,
         NotifyHolder = NotifyHolder, ConfigFolder = configFolder,
         Tabs = {}, Flags = {}, _flagSetters = {}, _tabOrder = 0,
+        _connections = Connections,
     }, Solar)
-
-    SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        local filter = SearchBox.Text:lower()
-        for _, t in ipairs(Window.Tabs) do
-            t.Button.Visible = filter == "" or t.Name:lower():find(filter, 1, true) ~= nil
-        end
-    end)
 
     return Window
 end
@@ -260,26 +290,24 @@ end
 --// Notifications ------------------------------------------------------
 function Solar:Notify(config)
     config = config or {}
-    local title = config.Title or "แจ้งเตือน"
+    local title = config.Title or "Notification"
     local content = config.Content or ""
-    local duration = config.Duration or 3.5
+    local duration = config.Duration or 4
 
     local Toast = create("Frame", {
-        Size = UDim2.fromOffset(260, 0),
+        Size = UDim2.fromOffset(280, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundColor3 = Theme.Card,
         BackgroundTransparency = 1,
         Parent = self.NotifyHolder,
     }, { corner(R.Card), stroke(Theme.Stroke, 1) })
-    
     create("UIPadding", {
         PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10),
         PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12),
     }).Parent = Toast
 
     local AccentBar = create("Frame", {
-        Size = UDim2.new(0, 3, 1, -8),
-        Position = UDim2.fromOffset(0, 4),
+        Size = UDim2.new(0, 3, 1, 0),
         BackgroundColor3 = Theme.Accent,
         BackgroundTransparency = 1,
         Parent = Toast,
@@ -301,66 +329,23 @@ function Solar:Notify(config)
         Parent = Toast,
     })
 
-    tween(Toast, { BackgroundTransparency = 0 })
-    tween(AccentBar, { BackgroundTransparency = 0 })
-    tween(TitleLabel, { TextTransparency = 0 })
-    tween(ContentLabel, { TextTransparency = 0 })
+    tween(Toast, { BackgroundTransparency = 0 }, 0.2)
+    tween(AccentBar, { BackgroundTransparency = 0 }, 0.2)
+    tween(TitleLabel, { TextTransparency = 0 }, 0.2)
+    tween(ContentLabel, { TextTransparency = 0 }, 0.2)
 
     task.delay(duration, function()
         if not Toast.Parent then return end
-        tween(Toast, { BackgroundTransparency = 1 })
-        tween(AccentBar, { BackgroundTransparency = 1 })
-        tween(TitleLabel, { TextTransparency = 1 })
-        tween(ContentLabel, { TextTransparency = 1 })
-        task.wait(0.18)
+        tween(Toast, { BackgroundTransparency = 1 }, 0.2)
+        tween(AccentBar, { BackgroundTransparency = 1 }, 0.2)
+        tween(TitleLabel, { TextTransparency = 1 }, 0.2)
+        tween(ContentLabel, { TextTransparency = 1 }, 0.2)
+        task.wait(0.22)
         Toast:Destroy()
     end)
 end
 
---// Loading Overlay ---------------------------------------------------
-function Solar:ShowLoading(config)
-    config = config or {}
-    local title = config.Title or "กำลังโหลด..."
-    local subtitle = config.Subtitle or ""
-    local duration = config.Duration or 1.2
-
-    self.Main.Visible = false
-
-    local Overlay = create("Frame", {
-        Size = UDim2.fromOffset(800, 560),
-        Position = UDim2.new(0.5, -400, 0.5, -280),
-        BackgroundColor3 = Theme.Background,
-        Parent = self.ScreenGui,
-    }, { corner(R.Window), stroke(Theme.Stroke, 1) })
-
-    create("TextLabel", {
-        Text = title, Font = Enum.Font.GothamBold, TextSize = 18,
-        TextColor3 = Theme.TextPrimary, BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, -150, 0.5, -25), Size = UDim2.fromOffset(300, 22),
-        TextXAlignment = Enum.TextXAlignment.Center, Parent = Overlay,
-    })
-    create("TextLabel", {
-        Text = subtitle, Font = Enum.Font.Gotham, TextSize = 12,
-        TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, -150, 0.5, 0), Size = UDim2.fromOffset(300, 16),
-        TextXAlignment = Enum.TextXAlignment.Center, Parent = Overlay,
-    })
-    local Track = create("Frame", {
-        Size = UDim2.fromOffset(200, 4), Position = UDim2.new(0.5, -100, 0.5, 25),
-        BackgroundColor3 = Theme.SliderTrack, Parent = Overlay,
-    }, { corner(2) })
-    local Fill = create("Frame", {
-        Size = UDim2.fromOffset(0, 4), BackgroundColor3 = Theme.Accent, Parent = Track,
-    }, { corner(2) })
-    tween(Fill, { Size = UDim2.fromOffset(200, 4) }, duration)
-
-    task.delay(duration, function()
-        Overlay:Destroy()
-        self.Main.Visible = true
-    end)
-end
-
---// Config System ----------------------------------------------------
+--// Config Save / Load (Flag-based) -------------------------------------
 function Solar:SaveConfig(name)
     name = name or "default"
     local data = {}
@@ -369,8 +354,8 @@ function Solar:SaveConfig(name)
     end
     local ok = safeWritefile(self.ConfigFolder .. "/" .. name .. ".json", HttpService:JSONEncode(data))
     self:Notify({
-        Title = ok and "บันทึกแล้ว" or "ล้มเหลว",
-        Content = ok and ("บันทึกตั้งค่าลงไฟล์ \"" .. name .. "\" เรียบร้อย") or "Executor ไม่รองรับ writefile",
+        Title = ok and "Config Saved" or "Save Failed",
+        Content = ok and ("Saved as \"" .. name .. "\"") or "Executor does not support writefile",
         Duration = 3,
     })
     return ok
@@ -380,30 +365,36 @@ function Solar:LoadConfig(name)
     name = name or "default"
     local raw = safeReadfile(self.ConfigFolder .. "/" .. name .. ".json")
     if not raw then
-        self:Notify({ Title = "โหลดล้มเหลว", Content = "ไม่พบไฟล์ชื่อ \"" .. name .. "\"", Duration = 3 })
+        self:Notify({ Title = "Load Failed", Content = "No saved config named \"" .. name .. "\"", Duration = 3 })
         return false
     end
     local ok, data = pcall(function() return HttpService:JSONDecode(raw) end)
     if not ok then
-        self:Notify({ Title = "โหลดล้มเหลว", Content = "ไฟล์ตั้งค่าเสียหาย", Duration = 3 })
+        self:Notify({ Title = "Load Failed", Content = "Config file is corrupted", Duration = 3 })
         return false
     end
     for flag, value in pairs(data) do
         local setter = self._flagSetters[flag]
         if setter then setter.set(value) end
     end
-    self:Notify({ Title = "โหลดสำเร็จ", Content = "โหลดตั้งค่าจาก \"" .. name .. "\" แล้ว", Duration = 3 })
+    self:Notify({ Title = "Config Loaded", Content = "Loaded \"" .. name .. "\"", Duration = 3 })
     return true
 end
 
 function Solar:Destroy()
+    if self._connections then
+        for _, conn in ipairs(self._connections) do
+            pcall(function() conn:Disconnect() end)
+        end
+    end
+    OpenPanels = {}
     if self.ScreenGui then self.ScreenGui:Destroy() end
 end
 
 --// Tabs -------------------------------------------------------------------
 function Solar:CreateTab(config)
     config = config or {}
-    local name = config.Name or "แท็บ"
+    local name = config.Name or "Tab"
     local icon = config.Icon or "•"
 
     self._tabOrder = self._tabOrder + 1
@@ -411,26 +402,26 @@ function Solar:CreateTab(config)
 
     local TabButton = create("TextButton", {
         Text = "", AutoButtonColor = false, BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 0, 36), LayoutOrder = order, Parent = self.TabList,
-    }, { corner(R.Control) })
+        Size = UDim2.new(1, 0, 0, 40), LayoutOrder = order, Parent = self.Sidebar,
+    })
 
-    local AccentPill = create("Frame", {
-        Size = UDim2.new(0, 3, 0, 16), Position = UDim2.new(0, 2, 0.5, -8),
+    local AccentBar = create("Frame", {
+        Size = UDim2.new(0, 3, 0, 20), Position = UDim2.new(0, 0, 0.5, -10),
         BackgroundColor3 = Theme.Accent, BorderSizePixel = 0,
         BackgroundTransparency = 1, Parent = TabButton,
     }, { corner(2) })
 
     local IconLabel = create("TextLabel", {
-        Text = icon, Font = Enum.Font.GothamMedium, TextSize = 13,
+        Text = icon, Font = Enum.Font.GothamMedium, TextSize = 14,
         TextColor3 = Theme.TextTab, BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(14, 0), Size = UDim2.fromOffset(18, 36),
+        Position = UDim2.fromOffset(16, 0), Size = UDim2.fromOffset(20, 40),
         Parent = TabButton,
     })
     local Label = create("TextLabel", {
-        Text = name, Font = Enum.Font.GothamMedium, TextSize = 13,
+        Text = name, Font = Enum.Font.GothamMedium, TextSize = 14,
         TextColor3 = Theme.TextTab, TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1, Position = UDim2.fromOffset(36, 0),
-        Size = UDim2.new(1, -40, 1, 0), Parent = TabButton,
+        BackgroundTransparency = 1, Position = UDim2.fromOffset(42, 0),
+        Size = UDim2.fromOffset(140, 40), Parent = TabButton,
     })
 
     local Page = create("ScrollingFrame", {
@@ -440,28 +431,20 @@ function Solar:CreateTab(config)
         Visible = false, Parent = self.Content,
     })
     create("UIPadding", {
-        PaddingTop = UDim.new(0, 16), PaddingLeft = UDim.new(0, 18),
-        PaddingRight = UDim.new(0, 18), PaddingBottom = UDim.new(0, 16),
+        PaddingTop = UDim.new(0, 18), PaddingLeft = UDim.new(0, 22),
+        PaddingRight = UDim.new(0, 22), PaddingBottom = UDim.new(0, 18),
     }).Parent = Page
-    create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }).Parent = Page
+    create("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }).Parent = Page
 
-    local Tab = { Page = Page, _order = 0, Window = self, Name = name, Button = TabButton }
+    local Tab = { Page = Page, _order = 0, Window = self }
 
     local function setActive(active)
-        tween(AccentPill, { BackgroundTransparency = active and 0 or 1 })
-        tween(TabButton, { BackgroundColor3 = active and Theme.Card or Theme.Sidebar })
-        tween(Label, { TextColor3 = active and Theme.TextTabActive or Theme.TextTab })
-        tween(IconLabel, { TextColor3 = active and Theme.Accent or Theme.TextTab })
+        tween(AccentBar, { BackgroundTransparency = active and 0 or 1 }, 0.15)
+        tween(Label, { TextColor3 = active and Theme.TextTabActive or Theme.TextTab }, 0.15)
+        tween(IconLabel, { TextColor3 = active and Theme.Accent or Theme.TextTab }, 0.15)
         Label.Font = active and Enum.Font.GothamBold or Enum.Font.GothamMedium
         Page.Visible = active
     end
-
-    TabButton.MouseEnter:Connect(function()
-        if not Page.Visible then tween(TabButton, { BackgroundColor3 = Theme.CardHover }) end
-    end)
-    TabButton.MouseLeave:Connect(function()
-        if not Page.Visible then tween(TabButton, { BackgroundColor3 = Theme.Sidebar }) end
-    end)
 
     TabButton.MouseButton1Click:Connect(function()
         for _, t in pairs(self.Tabs) do t.setActive(false) end
@@ -472,29 +455,29 @@ function Solar:CreateTab(config)
     self.Tabs[#self.Tabs + 1] = Tab
     if #self.Tabs == 1 then setActive(true) end
 
-    -- Card Primitive
+    --// Card primitives -----------------------------------------------
     local function baseCard(order, height)
         return create("Frame", {
-            BackgroundColor3 = Theme.Card, Size = UDim2.new(1, 0, 0, height or 52),
+            BackgroundColor3 = Theme.Card, Size = UDim2.new(1, 0, 0, height or 58),
             LayoutOrder = order, Parent = Page,
         }, { corner(R.Card), stroke(Theme.Stroke, 1) })
     end
 
     local function cardTexts(Card, title, desc, rightPad)
         create("TextLabel", {
-            Text = title, Font = Enum.Font.GothamMedium, TextSize = 13,
+            Text = title, Font = Enum.Font.GothamMedium, TextSize = 14,
             TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
             BackgroundTransparency = 1,
-            Position = UDim2.fromOffset(14, desc ~= "" and 8 or 0),
-            Size = UDim2.new(1, -(rightPad + 14), 0, desc ~= "" and 18 or 52),
+            Position = UDim2.fromOffset(16, desc ~= "" and 9 or 0),
+            Size = UDim2.new(1, -(rightPad + 16), 0, desc ~= "" and 18 or 58),
             Parent = Card,
         })
         if desc and desc ~= "" then
             create("TextLabel", {
-                Text = desc, Font = Enum.Font.Gotham, TextSize = 11,
+                Text = desc, Font = Enum.Font.Gotham, TextSize = 12,
                 TextColor3 = Theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Left,
-                BackgroundTransparency = 1, Position = UDim2.fromOffset(14, 26),
-                Size = UDim2.new(1, -(rightPad + 14), 0, 16), Parent = Card,
+                BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 31),
+                Size = UDim2.new(1, -(rightPad + 16), 0, 16), Parent = Card,
             })
         end
     end
@@ -508,9 +491,9 @@ function Solar:CreateTab(config)
     function Tab:CreateSection(name)
         self._order = self._order + 1
         create("TextLabel", {
-            Text = name, Font = Enum.Font.GothamBold, TextSize = 16,
+            Text = name, Font = Enum.Font.GothamBold, TextSize = 19,
             TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 24),
+            BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 28),
             LayoutOrder = self._order, Parent = Page,
         })
     end
@@ -519,119 +502,14 @@ function Solar:CreateTab(config)
     function Tab:CreateLabel(text)
         self._order = self._order + 1
         create("TextLabel", {
-            Text = text, Font = Enum.Font.Gotham, TextSize = 12,
+            Text = text, Font = Enum.Font.Gotham, TextSize = 13,
             TextColor3 = Theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 16),
+            BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 18),
             LayoutOrder = self._order, Parent = Page,
         })
     end
 
-    --// Divider -------------------------------------------------------
-    function Tab:CreateDivider()
-        self._order = self._order + 1
-        create("Frame", {
-            Size = UDim2.new(1, 0, 0, 1),
-            BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0,
-            LayoutOrder = self._order, Parent = Page,
-        })
-    end
-
-    --// Paragraph -------------------------------------------------------
-    function Tab:CreateParagraph(config)
-        config = config or {}
-        local title, content = config.Title or "", config.Content or ""
-        self._order = self._order + 1
-        local Holder = create("Frame", {
-            Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
-            BackgroundTransparency = 1, LayoutOrder = self._order, Parent = Page,
-        })
-        local y = 0
-        if title ~= "" then
-            create("TextLabel", {
-                Text = title, Font = Enum.Font.GothamBold, TextSize = 13,
-                TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-                BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 16),
-                Parent = Holder,
-            })
-            y = 20
-        end
-        create("TextLabel", {
-            Text = content, Font = Enum.Font.Gotham, TextSize = 12,
-            TextColor3 = Theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Left,
-            TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true,
-            BackgroundTransparency = 1, Position = UDim2.fromOffset(0, y),
-            Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
-            Parent = Holder,
-        })
-    end
-
-    --// Progress Bar -----------------------------------------------------
-    function Tab:CreateProgressBar(config)
-        config = config or {}
-        local title = config.Title or "Progress"
-        local min, max = config.Min or 0, config.Max or 100
-        local default = math.clamp(config.Default or min, min, max)
-
-        self._order = self._order + 1
-        local Card = baseCard(self._order, 52)
-        create("TextLabel", {
-            Text = title, Font = Enum.Font.GothamMedium, TextSize = 13,
-            TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1, Position = UDim2.fromOffset(14, 6),
-            Size = UDim2.new(1, -80, 0, 16), Parent = Card,
-        })
-        local ValueLabel = create("TextLabel", {
-            Text = default .. "/" .. max, Font = Enum.Font.GothamMedium, TextSize = 11,
-            TextColor3 = Theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Right,
-            BackgroundTransparency = 1, Position = UDim2.new(1, -74, 0, 6),
-            Size = UDim2.fromOffset(60, 16), Parent = Card,
-        })
-        local Track = create("Frame", {
-            Size = UDim2.new(1, -28, 0, 6), Position = UDim2.fromOffset(14, 30),
-            BackgroundColor3 = Theme.SliderTrack, Parent = Card,
-        }, { corner(3) })
-        local Fill = create("Frame", {
-            Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
-            BackgroundColor3 = Theme.Accent, Parent = Track,
-        }, { corner(3) })
-
-        return {
-            Set = function(_, value)
-                value = math.clamp(value, min, max)
-                tween(Fill, { Size = UDim2.new((value - min) / (max - min), 0, 1, 0) })
-                ValueLabel.Text = value .. "/" .. max
-            end,
-        }
-    end
-
-    --// Button (Fluent Style) ------------------------------------------
-    function Tab:CreateButton(config)
-        config = config or {}
-        local title, desc = config.Title or "Button", config.Desc or ""
-        local callback = config.Callback or function() end
-        local expandable = config.Expandable
-
-        self._order = self._order + 1
-        local Card = baseCard(self._order)
-        cardTexts(Card, title, desc, expandable and 36 or 14)
-
-        if expandable then
-            create("TextLabel", {
-                Text = "›", Font = Enum.Font.GothamBold, TextSize = 18,
-                TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1,
-                Position = UDim2.new(1, -28, 0, 0), Size = UDim2.fromOffset(20, 52),
-                Parent = Card,
-            })
-        end
-
-        local ClickArea = create("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = Card })
-        ClickArea.MouseEnter:Connect(function() tween(Card, { BackgroundColor3 = Theme.CardHover }) end)
-        ClickArea.MouseLeave:Connect(function() tween(Card, { BackgroundColor3 = Theme.Card }) end)
-        ClickArea.MouseButton1Click:Connect(callback)
-        return Card
-    end
-
-    --// Toggle (Fluent Clean Pill Style) ------------------------------
+    --// Toggle -------------------------------------------------------
     function Tab:CreateToggle(config)
         config = config or {}
         local title, desc = config.Title or "Toggle", config.Desc or ""
@@ -639,23 +517,22 @@ function Solar:CreateTab(config)
 
         self._order = self._order + 1
         local Card = baseCard(self._order)
-        cardTexts(Card, title, desc, 54)
+        cardTexts(Card, title, desc, 62)
 
         local Track = create("Frame", {
-            Size = UDim2.fromOffset(40, 20), Position = UDim2.new(1, -50, 0.5, -10),
+            Size = UDim2.fromOffset(44, 24), Position = UDim2.new(1, -60, 0.5, -12),
             BackgroundColor3 = default and Theme.Accent or Theme.ToggleOff, Parent = Card,
-        }, { corner(10), stroke(default and Theme.Accent or Theme.Stroke, 1) })
-        
+        }, { corner(12) })
         local Knob = create("Frame", {
-            Size = UDim2.fromOffset(12, 12),
-            Position = default and UDim2.new(1, -16, 0.5, -6) or UDim2.new(0, 4, 0.5, -6),
-            BackgroundColor3 = default and Color3.new(1, 1, 1) or Theme.ToggleKnob, Parent = Track,
+            Size = UDim2.fromOffset(18, 18),
+            Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9),
+            BackgroundColor3 = Theme.ToggleKnob, Parent = Track,
         }, { corner(R.Knob) })
 
         local state = default
         local function render()
-            tween(Track, { BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff })
-            tween(Knob, { Position = state and UDim2.new(1, -16, 0.5, -6) or UDim2.new(0, 4, 0.5, -6) })
+            tween(Track, { BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff }, 0.15)
+            tween(Knob, { Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9) }, 0.15)
         end
 
         local ClickArea = create("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = Card })
@@ -673,6 +550,33 @@ function Solar:CreateTab(config)
         }
     end
 
+    --// Button (optional expandable chevron) --------------------------
+    function Tab:CreateButton(config)
+        config = config or {}
+        local title, desc = config.Title or "Button", config.Desc or ""
+        local callback = config.Callback or function() end
+        local expandable = config.Expandable
+
+        self._order = self._order + 1
+        local Card = baseCard(self._order)
+        cardTexts(Card, title, desc, expandable and 40 or 20)
+
+        if expandable then
+            create("TextLabel", {
+                Text = "›", Font = Enum.Font.GothamBold, TextSize = 20,
+                TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1,
+                Position = UDim2.new(1, -34, 0, 0), Size = UDim2.fromOffset(24, 58),
+                Parent = Card,
+            })
+        end
+
+        local ClickArea = create("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = Card })
+        ClickArea.MouseEnter:Connect(function() tween(Card, { BackgroundColor3 = Theme.CardHover }) end)
+        ClickArea.MouseLeave:Connect(function() tween(Card, { BackgroundColor3 = Theme.Card }) end)
+        ClickArea.MouseButton1Click:Connect(callback)
+        return Card
+    end
+
     --// Slider ---------------------------------------------------------
     function Tab:CreateSlider(config)
         config = config or {}
@@ -682,33 +586,33 @@ function Solar:CreateTab(config)
         local callback = config.Callback or function() end
 
         self._order = self._order + 1
-        local Card = baseCard(self._order, 58)
+        local Card = baseCard(self._order, 66)
 
         create("TextLabel", {
-            Text = title, Font = Enum.Font.GothamMedium, TextSize = 13,
+            Text = title, Font = Enum.Font.GothamMedium, TextSize = 14,
             TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1, Position = UDim2.fromOffset(14, 8),
-            Size = UDim2.new(1, -80, 0, 16), Parent = Card,
+            BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 10),
+            Size = UDim2.new(1, -90, 0, 18), Parent = Card,
         })
         local ValueLabel = create("TextLabel", {
-            Text = tostring(default), Font = Enum.Font.GothamMedium, TextSize = 12,
+            Text = tostring(default), Font = Enum.Font.GothamMedium, TextSize = 13,
             TextColor3 = Theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Right,
-            BackgroundTransparency = 1, Position = UDim2.new(1, -64, 0, 8),
-            Size = UDim2.fromOffset(50, 16), Parent = Card,
+            BackgroundTransparency = 1, Position = UDim2.new(1, -66, 0, 10),
+            Size = UDim2.fromOffset(50, 18), Parent = Card,
         })
 
         local Track = create("Frame", {
-            Size = UDim2.new(1, -28, 0, 4), Position = UDim2.fromOffset(14, 36),
+            Size = UDim2.new(1, -32, 0, 6), Position = UDim2.fromOffset(16, 40),
             BackgroundColor3 = Theme.SliderTrack, Parent = Card,
-        }, { corner(2) })
+        }, { corner(3) })
         local Fill = create("Frame", {
             Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
             BackgroundColor3 = Theme.Accent, Parent = Track,
-        }, { corner(2) })
+        }, { corner(3) })
         local Knob = create("Frame", {
-            Size = UDim2.fromOffset(12, 12),
-            Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6),
-            BackgroundColor3 = Color3.new(1, 1, 1), Parent = Track,
+            Size = UDim2.fromOffset(14, 14),
+            Position = UDim2.new((default - min) / (max - min), -7, 0.5, -7),
+            BackgroundColor3 = Theme.ToggleKnob, Parent = Track,
         }, { corner(R.Knob) })
 
         local currentValue = default
@@ -718,11 +622,10 @@ function Solar:CreateTab(config)
             local value = math.floor(min + (max - min) * alpha + 0.5)
             currentValue = value
             Fill.Size = UDim2.new(alpha, 0, 1, 0)
-            Knob.Position = UDim2.new(alpha, -6, 0.5, -6)
+            Knob.Position = UDim2.new(alpha, -7, 0.5, -7)
             ValueLabel.Text = tostring(value)
             callback(value)
         end
-
         Track.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
@@ -756,61 +659,58 @@ function Solar:CreateTab(config)
         local callback = config.Callback or function() end
 
         self._order = self._order + 1
-        local Card = baseCard(self._order, 52)
-        cardTexts(Card, title, "", 150)
+        local Card = baseCard(self._order, 58)
+        cardTexts(Card, title, "", 140)
 
         local SelectBtn = create("TextButton", {
-            Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(130, 32),
-            Position = UDim2.new(1, -144, 0.5, -16),
+            Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(120, 34),
+            Position = UDim2.new(1, -136, 0.5, -17),
             BackgroundColor3 = Theme.ToggleOff, Parent = Card,
-        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-        
+        }, { corner(R.Control) })
         local SelectedLabel = create("TextLabel", {
-            Text = default, Font = Enum.Font.Gotham, TextSize = 12,
+            Text = default, Font = Enum.Font.Gotham, TextSize = 13,
             TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
             BackgroundTransparency = 1, Position = UDim2.fromOffset(10, 0),
-            Size = UDim2.fromOffset(95, 32), Parent = SelectBtn,
+            Size = UDim2.fromOffset(86, 34), Parent = SelectBtn,
         })
         create("TextLabel", {
-            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 12,
+            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 14,
             TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1,
-            Position = UDim2.new(1, -20, 0, 0), Size = UDim2.fromOffset(16, 32),
+            Position = UDim2.new(1, -22, 0, 0), Size = UDim2.fromOffset(18, 34),
             Parent = SelectBtn,
         })
 
-        -- Fixed Floating List Overlay
-        local List = create("ScrollingFrame", {
-            Size = UDim2.fromOffset(130, 0), Position = UDim2.new(1, -144, 1, 4),
-            BackgroundColor3 = Theme.Card, ClipsDescendants = true, ZIndex = 10,
-            ScrollBarThickness = 2, CanvasSize = UDim2.new(0, 0, 0, 0),
-            AutomaticCanvasSize = Enum.AutomaticSize.Y, Visible = false,
+        local List = create("Frame", {
+            Size = UDim2.fromOffset(120, 0), Position = UDim2.new(1, -136, 0, 62),
+            BackgroundColor3 = Theme.CardHover, ClipsDescendants = true, ZIndex = 20,
             Parent = Card,
         }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
 
         local currentValue = default
         local open = false
-        
-        local function toggleOpen()
-            open = not open
-            List.Visible = open
-            local target = open and math.min(#options * 28, 120) or 0
-            tween(List, { Size = UDim2.fromOffset(130, target) })
+        local function close()
+            open = false
+            tween(List, { Size = UDim2.fromOffset(120, 0) }, 0.12)
         end
-
+        local function toggleOpen()
+            if not open then closeAllPanelsExcept(close) end
+            open = not open
+            local target = open and math.min(#options * 30, 150) or 0
+            tween(List, { Size = UDim2.fromOffset(120, target) }, 0.12)
+        end
+        registerPanel(close)
         for i, opt in ipairs(options) do
             local OptBtn = create("TextButton", {
                 Text = opt, Font = Enum.Font.Gotham, TextSize = 12,
                 TextColor3 = Theme.TextPrimary, AutoButtonColor = false,
-                BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 28),
-                LayoutOrder = i, ZIndex = 11, Parent = List,
+                BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 30),
+                LayoutOrder = i, ZIndex = 20, Parent = List,
             })
-            OptBtn.MouseEnter:Connect(function() OptBtn.BackgroundTransparency = 0.8; OptBtn.BackgroundColor3 = Theme.Accent end)
-            OptBtn.MouseLeave:Connect(function() OptBtn.BackgroundTransparency = 1 end)
             OptBtn.MouseButton1Click:Connect(function()
                 currentValue = opt
                 SelectedLabel.Text = opt
-                toggleOpen()
+                close()
                 callback(opt)
             end)
         end
@@ -823,226 +723,6 @@ function Solar:CreateTab(config)
         return { Set = function(_, v) currentValue = v; SelectedLabel.Text = v; callback(v) end }
     end
 
-    --// Multi Dropdown ----------------------------------------------------
-    function Tab:CreateMultiDropdown(config)
-        config = config or {}
-        local title = config.Title or "Multi Dropdown"
-        local options = config.Options or {}
-        local defaults = config.Default or {}
-        local callback = config.Callback or function() end
-
-        local selected = {}
-        for _, v in ipairs(defaults) do selected[v] = true end
-
-        self._order = self._order + 1
-        local Card = baseCard(self._order, 52)
-        cardTexts(Card, title, "", 150)
-
-        local function selectedText()
-            local list = {}
-            for opt in pairs(selected) do list[#list + 1] = opt end
-            if #list == 0 then return "ไม่ได้เลือก" end
-            return #list .. " รายการ"
-        end
-
-        local SelectBtn = create("TextButton", {
-            Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(130, 32),
-            Position = UDim2.new(1, -144, 0.5, -16),
-            BackgroundColor3 = Theme.ToggleOff, Parent = Card,
-        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-        
-        local SelectedLabel = create("TextLabel", {
-            Text = selectedText(), Font = Enum.Font.Gotham, TextSize = 12,
-            TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1, Position = UDim2.fromOffset(10, 0),
-            Size = UDim2.fromOffset(95, 32), Parent = SelectBtn,
-        })
-        create("TextLabel", {
-            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 12,
-            TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1,
-            Position = UDim2.new(1, -20, 0, 0), Size = UDim2.fromOffset(16, 32),
-            Parent = SelectBtn,
-        })
-
-        local List = create("ScrollingFrame", {
-            Size = UDim2.fromOffset(140, 0), Position = UDim2.new(1, -154, 1, 4),
-            BackgroundColor3 = Theme.Card, ClipsDescendants = true, ZIndex = 10,
-            ScrollBarThickness = 2, CanvasSize = UDim2.new(0, 0, 0, 0),
-            AutomaticCanvasSize = Enum.AutomaticSize.Y, Visible = false,
-            Parent = Card,
-        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-        create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
-
-        local open = false
-        local function toggleOpen()
-            open = not open
-            List.Visible = open
-            local target = open and math.min(#options * 28, 120) or 0
-            tween(List, { Size = UDim2.fromOffset(140, target) })
-        end
-        SelectBtn.MouseButton1Click:Connect(toggleOpen)
-
-        for i, opt in ipairs(options) do
-            local Row = create("TextButton", {
-                Text = "", AutoButtonColor = false, BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 28), LayoutOrder = i, ZIndex = 11, Parent = List,
-            })
-            local Check = create("Frame", {
-                Size = UDim2.fromOffset(12, 12), Position = UDim2.fromOffset(8, 8),
-                BackgroundColor3 = selected[opt] and Theme.Accent or Theme.ToggleOff,
-                ZIndex = 11, Parent = Row,
-            }, { corner(2) })
-            create("TextLabel", {
-                Text = opt, Font = Enum.Font.Gotham, TextSize = 11,
-                TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-                BackgroundTransparency = 1, Position = UDim2.fromOffset(26, 0),
-                Size = UDim2.new(1, -30, 1, 0), ZIndex = 11, Parent = Row,
-            })
-            Row.MouseButton1Click:Connect(function()
-                selected[opt] = not selected[opt] or nil
-                Check.BackgroundColor3 = selected[opt] and Theme.Accent or Theme.ToggleOff
-                SelectedLabel.Text = selectedText()
-                local list = {}
-                for o in pairs(selected) do list[#list + 1] = o end
-                callback(list)
-            end)
-        end
-
-        registerFlag(config.Flag,
-            function()
-                local list = {}
-                for o in pairs(selected) do list[#list + 1] = o end
-                return list
-            end,
-            function(list)
-                selected = {}
-                for _, o in ipairs(list) do selected[o] = true end
-                SelectedLabel.Text = selectedText()
-            end)
-
-        return { Get = function()
-            local list = {}
-            for o in pairs(selected) do list[#list + 1] = o end
-            return list
-        end }
-    end
-
-    --// Combo Box (Search + Dropdown) -----------------------------------
-    function Tab:CreateComboBox(config)
-        config = config or {}
-        local title = config.Title or "Combo Box"
-        local options = config.Options or {}
-        local default = config.Default or options[1] or ""
-        local callback = config.Callback or function() end
-
-        self._order = self._order + 1
-        local Card = baseCard(self._order, 52)
-        cardTexts(Card, title, "", 160)
-
-        local Box = create("TextBox", {
-            Text = default, PlaceholderText = "ค้นหา...",
-            Font = Enum.Font.Gotham, TextSize = 12,
-            TextColor3 = Theme.TextPrimary, PlaceholderColor3 = Theme.TextSecondary,
-            BackgroundColor3 = Theme.ToggleOff, ClearTextOnFocus = false,
-            Size = UDim2.fromOffset(140, 30), Position = UDim2.new(1, -154, 0.5, -15),
-            Parent = Card,
-        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-        create("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 20) }).Parent = Box
-
-        local List = create("ScrollingFrame", {
-            Size = UDim2.fromOffset(140, 0), Position = UDim2.new(1, -154, 1, 4),
-            BackgroundColor3 = Theme.Card, ClipsDescendants = true, ZIndex = 10,
-            ScrollBarThickness = 2, CanvasSize = UDim2.new(0, 0, 0, 0),
-            AutomaticCanvasSize = Enum.AutomaticSize.Y, Visible = false,
-            Parent = Card,
-        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-        create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
-
-        local currentValue = default
-        local rows = {}
-
-        local function rebuildList(filter)
-            for _, r in ipairs(rows) do r:Destroy() end
-            rows = {}
-            local count = 0
-            for i, opt in ipairs(options) do
-                if filter == "" or opt:lower():find(filter:lower(), 1, true) then
-                    count = count + 1
-                    local OptBtn = create("TextButton", {
-                        Text = opt, Font = Enum.Font.Gotham, TextSize = 11,
-                        TextColor3 = Theme.TextPrimary, AutoButtonColor = false,
-                        BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 26),
-                        LayoutOrder = i, ZIndex = 11, Parent = List,
-                    })
-                    OptBtn.MouseButton1Click:Connect(function()
-                        currentValue = opt
-                        Box.Text = opt
-                        List.Visible = false
-                        tween(List, { Size = UDim2.fromOffset(140, 0) })
-                        callback(opt)
-                    end)
-                    rows[#rows + 1] = OptBtn
-                end
-            end
-            return math.min(count * 26, 110)
-        end
-        rebuildList("")
-
-        Box.Focused:Connect(function()
-            List.Visible = true
-            local h = rebuildList(Box.Text == default and "" or Box.Text)
-            tween(List, { Size = UDim2.fromOffset(140, h) })
-        end)
-        Box:GetPropertyChangedSignal("Text"):Connect(function()
-            if Box:IsFocused() then
-                List.Visible = true
-                local h = rebuildList(Box.Text)
-                tween(List, { Size = UDim2.fromOffset(140, h) })
-            end
-        end)
-        Box.FocusLost:Connect(function()
-            task.wait(0.12)
-            List.Visible = false
-            tween(List, { Size = UDim2.fromOffset(140, 0) })
-        end)
-
-        registerFlag(config.Flag,
-            function() return currentValue end,
-            function(v) currentValue = v; Box.Text = v; callback(v) end)
-
-        return { Set = function(_, v) currentValue = v; Box.Text = v; callback(v) end }
-    end
-
-    --// Text Input --------------------------------------------------------
-    function Tab:CreateInput(config)
-        config = config or {}
-        local title = config.Title or "Input"
-        local placeholder = config.Placeholder or "พิมพ์ข้อความ..."
-        local callback = config.Callback or function() end
-
-        self._order = self._order + 1
-        local Card = baseCard(self._order, 52)
-        cardTexts(Card, title, "", 150)
-
-        local Box = create("TextBox", {
-            Text = "", PlaceholderText = placeholder,
-            Font = Enum.Font.Gotham, TextSize = 12,
-            TextColor3 = Theme.TextPrimary, PlaceholderColor3 = Theme.TextSecondary,
-            BackgroundColor3 = Theme.ToggleOff, ClearTextOnFocus = false,
-            Size = UDim2.fromOffset(130, 30), Position = UDim2.new(1, -144, 0.5, -15),
-            Parent = Card,
-        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-        create("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }).Parent = Box
-
-        Box.FocusLost:Connect(function(enterPressed) callback(Box.Text, enterPressed) end)
-
-        registerFlag(config.Flag,
-            function() return Box.Text end,
-            function(v) Box.Text = v end)
-
-        return { Set = function(_, v) Box.Text = v end }
-    end
-
     --// Keybind ---------------------------------------------------------
     function Tab:CreateKeybind(config)
         config = config or {}
@@ -1051,23 +731,22 @@ function Solar:CreateTab(config)
         local callback = config.Callback or function() end
 
         self._order = self._order + 1
-        local Card = baseCard(self._order, 52)
+        local Card = baseCard(self._order, 58)
         cardTexts(Card, title, "", 100)
 
         local KeyBtn = create("TextButton", {
-            Text = default.Name, Font = Enum.Font.GothamBold, TextSize = 11,
+            Text = default.Name, Font = Enum.Font.GothamBold, TextSize = 12,
             TextColor3 = Theme.TextPrimary, AutoButtonColor = false,
-            BackgroundColor3 = Theme.ToggleOff, Size = UDim2.fromOffset(80, 28),
-            Position = UDim2.new(1, -94, 0.5, -14), Parent = Card,
-        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
+            BackgroundColor3 = Theme.ToggleOff, Size = UDim2.fromOffset(80, 30),
+            Position = UDim2.new(1, -96, 0.5, -15), Parent = Card,
+        }, { corner(R.Control) })
 
         local currentKey = default
         local listening = false
-
         KeyBtn.MouseButton1Click:Connect(function()
             if listening then return end
             listening = true
-            KeyBtn.Text = "กดปุ่ม..."
+            KeyBtn.Text = "..."
             local conn
             conn = UserInputService.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -1078,6 +757,7 @@ function Solar:CreateTab(config)
                     callback(input.KeyCode)
                 end
             end)
+            self.Window._connections[#self.Window._connections + 1] = conn
         end)
 
         registerFlag(config.Flag,
@@ -1085,6 +765,36 @@ function Solar:CreateTab(config)
             function(v) local kc = Enum.KeyCode[v]; if kc then currentKey = kc; KeyBtn.Text = kc.Name end end)
 
         return { Set = function(_, keyCode) currentKey = keyCode; KeyBtn.Text = keyCode.Name end }
+    end
+
+    --// Input / Textbox --------------------------------------------------
+    function Tab:CreateInput(config)
+        config = config or {}
+        local title = config.Title or "Input"
+        local placeholder = config.Placeholder or ""
+        local callback = config.Callback or function() end
+
+        self._order = self._order + 1
+        local Card = baseCard(self._order, 58)
+        cardTexts(Card, title, "", 160)
+
+        local Box = create("TextBox", {
+            Text = "", PlaceholderText = placeholder,
+            Font = Enum.Font.Gotham, TextSize = 13,
+            TextColor3 = Theme.TextPrimary, PlaceholderColor3 = Theme.TextSecondary,
+            BackgroundColor3 = Theme.ToggleOff, ClearTextOnFocus = false,
+            Size = UDim2.fromOffset(140, 32), Position = UDim2.new(1, -156, 0.5, -16),
+            Parent = Card,
+        }, { corner(R.Control) })
+        create("UIPadding", { PaddingLeft = UDim.new(0, 10) }).Parent = Box
+
+        Box.FocusLost:Connect(function(enterPressed) callback(Box.Text, enterPressed) end)
+
+        registerFlag(config.Flag,
+            function() return Box.Text end,
+            function(v) Box.Text = v end)
+
+        return { Set = function(_, v) Box.Text = v end }
     end
 
     --// Color Picker ------------------------------------------------------
@@ -1095,47 +805,48 @@ function Solar:CreateTab(config)
         local callback = config.Callback or function() end
 
         self._order = self._order + 1
-        local Card = baseCard(self._order, 52)
+        local Card = baseCard(self._order, 58)
         cardTexts(Card, title, "", 60)
 
         local Swatch = create("TextButton", {
             Text = "", AutoButtonColor = false,
-            Size = UDim2.fromOffset(36, 24), Position = UDim2.new(1, -50, 0.5, -12),
+            Size = UDim2.fromOffset(36, 28), Position = UDim2.new(1, -52, 0.5, -14),
             BackgroundColor3 = default, Parent = Card,
         }, { corner(R.Control), stroke(Theme.Stroke, 1) })
 
         local Panel = create("Frame", {
-            Size = UDim2.fromOffset(160, 0), Position = UDim2.new(1, -174, 1, 4),
-            BackgroundColor3 = Theme.Card, ClipsDescendants = true, ZIndex = 10,
-            Visible = false, Parent = Card,
+            Size = UDim2.fromOffset(180, 0), Position = UDim2.new(1, -196, 0, 62),
+            BackgroundColor3 = Theme.CardHover, ClipsDescendants = true, ZIndex = 20,
+            Parent = Card,
         }, { corner(R.Card), stroke(Theme.Stroke, 1) })
-        create("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }).Parent = Panel
+        create("UIPadding", { PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }).Parent = Panel
 
         local h, s, v = default:ToHSV()
         local currentColor = default
 
         local function makeChannelSlider(order, labelText, initial)
-            local Row = create("Frame", { Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1, LayoutOrder = order, Parent = Panel })
+            local Row = create("Frame", { Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1, LayoutOrder = order, Parent = Panel })
             create("TextLabel", {
-                Text = labelText, Font = Enum.Font.GothamBold, TextSize = 10,
+                Text = labelText, Font = Enum.Font.Gotham, TextSize = 11,
                 TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1,
-                Size = UDim2.fromOffset(14, 20), Parent = Row,
+                Size = UDim2.fromOffset(16, 20), Parent = Row,
             })
             local Track = create("Frame", {
-                Size = UDim2.new(1, -20, 0, 4), Position = UDim2.fromOffset(16, 8),
+                Size = UDim2.new(1, -26, 0, 6), Position = UDim2.fromOffset(20, 10),
                 BackgroundColor3 = Theme.SliderTrack, Parent = Row,
-            }, { corner(2) })
+            }, { corner(3) })
             local Knob = create("Frame", {
-                Size = UDim2.fromOffset(10, 10), Position = UDim2.new(initial, -5, 0.5, -5),
-                BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 11, Parent = Track,
+                Size = UDim2.fromOffset(12, 12), Position = UDim2.new(initial, -6, 0.5, -6),
+                BackgroundColor3 = Theme.ToggleKnob, ZIndex = 20, Parent = Track,
             }, { corner(R.Knob) })
             return Track, Knob
         end
-        create("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }).Parent = Panel
+        create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }).Parent = Panel
 
         local HTrack, HKnob = makeChannelSlider(1, "H", h)
         local STrack, SKnob = makeChannelSlider(2, "S", s)
         local VTrack, VKnob = makeChannelSlider(3, "V", v)
+        create("Frame", { Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, LayoutOrder = 4, Parent = Panel })
 
         local function updateColor()
             currentColor = Color3.fromHSV(h, s, v)
@@ -1147,7 +858,7 @@ function Solar:CreateTab(config)
             local dragging = false
             local function apply(input)
                 local alpha = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-                knob.Position = UDim2.new(alpha, -5, 0.5, -5)
+                knob.Position = UDim2.new(alpha, -6, 0.5, -6)
                 getSet(alpha)
                 updateColor()
             end
@@ -1173,11 +884,16 @@ function Solar:CreateTab(config)
         bindChannel(VTrack, VKnob, function(a) v = a end)
 
         local open = false
+        local function closePanel()
+            open = false
+            tween(Panel, { Size = UDim2.fromOffset(180, 0) }, 0.15)
+        end
         Swatch.MouseButton1Click:Connect(function()
+            if not open then closeAllPanelsExcept(closePanel) end
             open = not open
-            Panel.Visible = open
-            tween(Panel, { Size = UDim2.fromOffset(160, open and 80 or 0) })
+            tween(Panel, { Size = UDim2.fromOffset(180, open and 110 or 0) }, 0.15)
         end)
+        registerPanel(closePanel)
 
         registerFlag(config.Flag,
             function() return { currentColor.R, currentColor.G, currentColor.B } end,
@@ -1185,9 +901,9 @@ function Solar:CreateTab(config)
                 currentColor = Color3.new(rgb[1], rgb[2], rgb[3])
                 h, s, v = currentColor:ToHSV()
                 Swatch.BackgroundColor3 = currentColor
-                HKnob.Position = UDim2.new(h, -5, 0.5, -5)
-                SKnob.Position = UDim2.new(s, -5, 0.5, -5)
-                VKnob.Position = UDim2.new(v, -5, 0.5, -5)
+                HKnob.Position = UDim2.new(h, -6, 0.5, -6)
+                SKnob.Position = UDim2.new(s, -6, 0.5, -6)
+                VKnob.Position = UDim2.new(v, -6, 0.5, -6)
                 callback(currentColor)
             end)
 
@@ -1203,3 +919,73 @@ function Solar:CreateTab(config)
 end
 
 return Solar
+
+end
+
+local Solar = LoadSolar()
+
+-- ================= DEMO / TEST (edit as needed) =================
+local Window = Solar:CreateWindow({ Title = "PM PRIVATE", Subtitle = "1.0.1 by You", ConfigFolder = "SolarUI" })
+
+-- ---------- Tab: Races (matches reference layout) ----------
+local Races = Window:CreateTab({ Name = "Races", Icon = "R" })
+Races:CreateSection("Races")
+Races:CreateButton({ Title = "Unlock Fullbring", Desc = "", Expandable = true })
+Races:CreateButton({ Title = "Get Quincy", Desc = "Unlock Quincy", Expandable = true })
+
+Races:CreateSection("Quincy")
+Races:CreateToggle({
+    Title = "Auto Quincy Volt Quest [Lvl. 50+]", Desc = "Automatically do quincy Volt quest",
+    Default = false, Flag = "AutoQuincyVolt",
+    Callback = function(state) print("Auto Quincy Volt Quest:", state) end,
+})
+Races:CreateToggle({
+    Title = "Safe Mode", Desc = "Safe mode for Quincy Volt Quest",
+    Default = false, Flag = "SafeMode",
+    Callback = function(state) print("Safe Mode:", state) end,
+})
+Races:CreateToggle({
+    Title = "Enabled Switch Servers", Desc = "Enabled switch servers",
+    Default = false, Flag = "SwitchServers",
+    Callback = function(state) print("Switch Servers:", state) end,
+})
+Races:CreateButton({ Title = "Accept Schrift Quest", Desc = "Accept Schrift Quest", Expandable = true })
+
+-- ---------- Tab: Raids ----------
+local Raids = Window:CreateTab({ Name = "Raids", Icon = "O" })
+Raids:CreateSection("Raid Farm")
+Raids:CreateToggle({ Title = "Auto Raid", Desc = "Automatically join and farm raids", Default = false, Flag = "AutoRaid" })
+Raids:CreateSlider({ Title = "Raid Difficulty", Min = 1, Max = 10, Default = 5, Flag = "RaidDifficulty", Callback = function(v) print("Difficulty:", v) end })
+
+-- ---------- Tab: Hogyoku ----------
+local Hogyoku = Window:CreateTab({ Name = "Hogyoku", Icon = "H" })
+Hogyoku:CreateSection("Hogyoku")
+Hogyoku:CreateDropdown({
+    Title = "Select Ability", Options = { "Ability 1", "Ability 2", "Ability 3" },
+    Default = "Ability 1", Flag = "SelectedAbility",
+    Callback = function(v) print("Ability:", v) end,
+})
+
+-- ---------- Tab: Visuals ----------
+local Visuals = Window:CreateTab({ Name = "Visuals", Icon = "V" })
+Visuals:CreateSection("ESP")
+Visuals:CreateToggle({ Title = "Player ESP", Desc = "Show boxes/names through walls", Default = false, Flag = "PlayerESP" })
+Visuals:CreateColorPicker({ Title = "ESP Color", Default = Color3.fromRGB(64, 132, 245), Flag = "ESPColor", Callback = function(c) print("ESP Color:", c) end })
+Visuals:CreateKeybind({ Title = "Toggle ESP Keybind", Default = Enum.KeyCode.E, Flag = "ESPKeybind", Callback = function(k) print("Bound:", k.Name) end })
+
+-- ---------- Tab: Character ----------
+local Character = Window:CreateTab({ Name = "Character", Icon = "C" })
+Character:CreateSection("Movement")
+Character:CreateSlider({ Title = "Walkspeed", Min = 16, Max = 200, Default = 16, Flag = "Walkspeed", Callback = function(v) print("WS:", v) end })
+Character:CreateSlider({ Title = "Jump Power", Min = 50, Max = 300, Default = 50, Flag = "JumpPower", Callback = function(v) print("JP:", v) end })
+
+-- ---------- Tab: Settings ----------
+local Settings = Window:CreateTab({ Name = "Settings", Icon = "S" })
+Settings:CreateSection("Config")
+Settings:CreateButton({ Title = "Save Config", Desc = "Save all current settings", Callback = function() Window:SaveConfig("default") end })
+Settings:CreateButton({ Title = "Load Config", Desc = "Load saved settings", Callback = function() Window:LoadConfig("default") end })
+Settings:CreateSection("General")
+Settings:CreateInput({ Title = "Webhook URL", Placeholder = "https://discord.com/...", Flag = "WebhookURL", Callback = function(v) print("Webhook:", v) end })
+Settings:CreateLabel("Solar UI Library — test build")
+
+Window:Notify({ Title = "Solar UI Loaded", Content = "All systems ready.", Duration = 4 })
