@@ -133,25 +133,16 @@ function Zentih:CreateWindow(config)
     })
     create("UIStroke", { Color = Theme.Stroke, Thickness = 1 }).Parent = TopBar
 
-    local LogoChip = create("Frame", {
-        Size = UDim2.fromOffset(32, 32), Position = UDim2.fromOffset(16, 14),
-        BackgroundColor3 = Theme.Accent, ZIndex = 2, Parent = TopBar,
-    }, { corner(R.TopChip) })
-    create("TextLabel", {
-        Text = title:sub(1, 1), Font = Enum.Font.GothamBold, TextSize = 15,
-        TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = LogoChip,
-    })
     create("TextLabel", {
         Text = title, Font = Enum.Font.GothamBold, TextSize = 15,
         TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1, Position = UDim2.fromOffset(58, 12),
+        BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 12),
         Size = UDim2.fromOffset(400, 18), ZIndex = 2, Parent = TopBar,
     })
     create("TextLabel", {
         Text = subtitle, Font = Enum.Font.Gotham, TextSize = 12,
         TextColor3 = Theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1, Position = UDim2.fromOffset(58, 31),
+        BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 31),
         Size = UDim2.fromOffset(400, 16), ZIndex = 2, Parent = TopBar,
     })
 
@@ -284,26 +275,6 @@ function Zentih:Notify(config)
         task.wait(0.22)
         Toast:Destroy()
     end)
-end
-
---// Watermark ----------------------------------------------------------
-function Zentih:CreateWatermark(config)
-    config = config or {}
-    local text = config.Text or "Zentih UI"
-    local Chip = create("Frame", {
-        Size = UDim2.fromOffset(0, 26), AutomaticSize = Enum.AutomaticSize.X,
-        Position = UDim2.fromOffset(16, 16),
-        BackgroundColor3 = Theme.Card, BackgroundTransparency = 0.05,
-        ZIndex = 60, Parent = self.ScreenGui,
-    }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-    local Label = create("TextLabel", {
-        Text = text, Font = Enum.Font.GothamMedium, TextSize = 12,
-        TextColor3 = Theme.TextPrimary, BackgroundTransparency = 1,
-        Size = UDim2.fromOffset(0, 26), AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 60, Parent = Chip,
-    })
-    create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }).Parent = Chip
-    return { Set = function(_, newText) Label.Text = newText end }
 end
 
 --// Loading screen ------------------------------------------------------
@@ -705,29 +676,35 @@ function Zentih:CreateTab(config)
         local default = config.Default or options[1] or ""
         local callback = config.Callback or function() end
         self._order = self._order + 1
-        local Card = baseCard(self._order, 58)
-        cardTexts(Card, title, "", 140)
+        local Card = baseCard(self._order, 96)
+
+        create("TextLabel", {
+            Text = title, Font = Enum.Font.GothamMedium, TextSize = 14,
+            TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
+            BackgroundTransparency = 1, ZIndex = 1, Position = UDim2.fromOffset(16, 12),
+            Size = UDim2.new(1, -32, 0, 18), Parent = Card,
+        })
 
         local SelectBtn = create("TextButton", {
-            Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(120, 34),
-            Position = UDim2.new(1, -136, 0.5, -17), BackgroundColor3 = Theme.ToggleOff,
+            Text = "", AutoButtonColor = false, Size = UDim2.new(1, -32, 0, 40),
+            Position = UDim2.fromOffset(16, 40), BackgroundColor3 = Theme.ToggleOff,
             ZIndex = 1, Parent = Card,
-        }, { corner(R.Control) })
+        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         local SelectedLabel = create("TextLabel", {
-            Text = default, Font = Enum.Font.Gotham, TextSize = 13,
+            Text = default, Font = Enum.Font.Gotham, TextSize = 14,
             TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1, ZIndex = 1, Position = UDim2.fromOffset(10, 0),
-            Size = UDim2.fromOffset(86, 34), Parent = SelectBtn,
+            BackgroundTransparency = 1, ZIndex = 1, Position = UDim2.fromOffset(14, 0),
+            Size = UDim2.new(1, -46, 1, 0), Parent = SelectBtn,
         })
         create("TextLabel", {
-            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 14,
+            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 16,
             TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1, ZIndex = 1,
-            Position = UDim2.new(1, -22, 0, 0), Size = UDim2.fromOffset(18, 34),
+            Position = UDim2.new(1, -30, 0, 0), Size = UDim2.fromOffset(20, 40),
             Parent = SelectBtn,
         })
 
         local List = create("Frame", {
-            Size = UDim2.fromOffset(120, 0), Position = UDim2.new(1, -136, 0, 62),
+            Size = UDim2.new(1, -32, 0, 0), Position = UDim2.fromOffset(16, 84),
             BackgroundColor3 = Theme.CardHover, ClipsDescendants = true, ZIndex = 20, Parent = Card,
         }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
@@ -736,22 +713,26 @@ function Zentih:CreateTab(config)
         local open = false
         local function close()
             open = false
-            tween(List, { Size = UDim2.fromOffset(120, 0) }, 0.12)
+            tween(List, { Size = UDim2.new(1, -32, 0, 0) }, 0.12)
         end
         local function toggleOpen()
             if not open then closeAllPanelsExcept(close) end
             open = not open
-            local target = open and math.min(#options * 30, 150) or 0
-            tween(List, { Size = UDim2.fromOffset(120, target) }, 0.12)
+            local target = open and math.min(#options * 38, 190) or 0
+            tween(List, { Size = UDim2.new(1, -32, 0, target) }, 0.12)
         end
         registerPanel(close)
         for i, opt in ipairs(options) do
             local OptBtn = create("TextButton", {
-                Text = opt, Font = Enum.Font.Gotham, TextSize = 12,
+                Text = opt, Font = Enum.Font.Gotham, TextSize = 13,
                 TextColor3 = Theme.TextPrimary, AutoButtonColor = false,
-                BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 30),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 38),
                 LayoutOrder = i, ZIndex = 20, Parent = List,
             })
+            create("UIPadding", { PaddingLeft = UDim.new(0, 14) }).Parent = OptBtn
+            OptBtn.MouseEnter:Connect(function() tween(OptBtn, { BackgroundColor3 = Theme.Card }) end)
+            OptBtn.MouseLeave:Connect(function() tween(OptBtn, { BackgroundColor3 = Theme.CardHover }) end)
             OptBtn.MouseButton1Click:Connect(function()
                 currentValue = opt
                 SelectedLabel.Text = opt
@@ -841,36 +822,42 @@ function Zentih:CreateTab(config)
         for _, v in ipairs(defaults) do selected[v] = true end
 
         self._order = self._order + 1
-        local Card = baseCard(self._order, 58)
-        cardTexts(Card, title, "", 140)
+        local Card = baseCard(self._order, 96)
+
+        create("TextLabel", {
+            Text = title, Font = Enum.Font.GothamMedium, TextSize = 14,
+            TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
+            BackgroundTransparency = 1, ZIndex = 1, Position = UDim2.fromOffset(16, 12),
+            Size = UDim2.new(1, -32, 0, 18), Parent = Card,
+        })
 
         local function selectedText()
             local list = {}
             for opt in pairs(selected) do list[#list + 1] = opt end
-            if #list == 0 then return "None" end
+            if #list == 0 then return "None selected" end
             return #list .. " selected"
         end
 
         local SelectBtn = create("TextButton", {
-            Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(120, 34),
-            Position = UDim2.new(1, -136, 0.5, -17), BackgroundColor3 = Theme.ToggleOff,
+            Text = "", AutoButtonColor = false, Size = UDim2.new(1, -32, 0, 40),
+            Position = UDim2.fromOffset(16, 40), BackgroundColor3 = Theme.ToggleOff,
             ZIndex = 1, Parent = Card,
-        }, { corner(R.Control) })
+        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         local SelectedLabel = create("TextLabel", {
-            Text = selectedText(), Font = Enum.Font.Gotham, TextSize = 13,
+            Text = selectedText(), Font = Enum.Font.Gotham, TextSize = 14,
             TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1, ZIndex = 1, Position = UDim2.fromOffset(10, 0),
-            Size = UDim2.fromOffset(86, 34), Parent = SelectBtn,
+            BackgroundTransparency = 1, ZIndex = 1, Position = UDim2.fromOffset(14, 0),
+            Size = UDim2.new(1, -46, 1, 0), Parent = SelectBtn,
         })
         create("TextLabel", {
-            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 14,
+            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 16,
             TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1, ZIndex = 1,
-            Position = UDim2.new(1, -22, 0, 0), Size = UDim2.fromOffset(18, 34),
+            Position = UDim2.new(1, -30, 0, 0), Size = UDim2.fromOffset(20, 40),
             Parent = SelectBtn,
         })
 
         local List = create("Frame", {
-            Size = UDim2.fromOffset(150, 0), Position = UDim2.new(1, -166, 0, 62),
+            Size = UDim2.new(1, -32, 0, 0), Position = UDim2.fromOffset(16, 84),
             BackgroundColor3 = Theme.CardHover, ClipsDescendants = true, ZIndex = 20, Parent = Card,
         }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
@@ -878,13 +865,13 @@ function Zentih:CreateTab(config)
         local open = false
         local function close()
             open = false
-            tween(List, { Size = UDim2.fromOffset(150, 0) }, 0.12)
+            tween(List, { Size = UDim2.new(1, -32, 0, 0) }, 0.12)
         end
         local function toggleOpen()
             if not open then closeAllPanelsExcept(close) end
             open = not open
-            local target = open and math.min(#options * 30, 150) or 0
-            tween(List, { Size = UDim2.fromOffset(150, target) }, 0.12)
+            local target = open and math.min(#options * 38, 190) or 0
+            tween(List, { Size = UDim2.new(1, -32, 0, target) }, 0.12)
         end
         registerPanel(close)
         SelectBtn.MouseButton1Click:Connect(toggleOpen)
@@ -892,18 +879,20 @@ function Zentih:CreateTab(config)
         for i, opt in ipairs(options) do
             local Row = create("TextButton", {
                 Text = "", AutoButtonColor = false, BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 30), LayoutOrder = i, ZIndex = 20, Parent = List,
+                Size = UDim2.new(1, 0, 0, 38), LayoutOrder = i, ZIndex = 20, Parent = List,
             })
+            Row.MouseEnter:Connect(function() tween(Row, { BackgroundColor3 = Theme.Card }) end)
+            Row.MouseLeave:Connect(function() tween(Row, { BackgroundColor3 = Theme.CardHover }) end)
             local Check = create("Frame", {
-                Size = UDim2.fromOffset(14, 14), Position = UDim2.fromOffset(8, 8),
+                Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(14, 11),
                 BackgroundColor3 = selected[opt] and Theme.Accent or Theme.ToggleOff,
                 ZIndex = 20, Parent = Row,
             }, { corner(4) })
             create("TextLabel", {
-                Text = opt, Font = Enum.Font.Gotham, TextSize = 12,
+                Text = opt, Font = Enum.Font.Gotham, TextSize = 13,
                 TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-                BackgroundTransparency = 1, ZIndex = 20, Position = UDim2.fromOffset(30, 0),
-                Size = UDim2.new(1, -34, 1, 0), Parent = Row,
+                BackgroundTransparency = 1, ZIndex = 20, Position = UDim2.fromOffset(40, 0),
+                Size = UDim2.new(1, -44, 1, 0), Parent = Row,
             })
             Row.MouseButton1Click:Connect(function()
                 selected[opt] = not selected[opt] or nil
@@ -944,26 +933,34 @@ function Zentih:CreateTab(config)
         local callback = config.Callback or function() end
         self._order = self._order + 1
         local Card = baseCard(self._order, 58)
-        cardTexts(Card, title, "", 160)
+        self._order = self._order + 1
+        local Card = baseCard(self._order, 96)
+
+        create("TextLabel", {
+            Text = title, Font = Enum.Font.GothamMedium, TextSize = 14,
+            TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
+            BackgroundTransparency = 1, ZIndex = 1, Position = UDim2.fromOffset(16, 12),
+            Size = UDim2.new(1, -32, 0, 18), Parent = Card,
+        })
 
         local Box = create("TextBox", {
             Text = default, PlaceholderText = "Search...",
-            Font = Enum.Font.Gotham, TextSize = 13,
+            Font = Enum.Font.Gotham, TextSize = 14,
             TextColor3 = Theme.TextPrimary, PlaceholderColor3 = Theme.TextSecondary,
             BackgroundColor3 = Theme.ToggleOff, ClearTextOnFocus = false,
-            Size = UDim2.fromOffset(140, 32), Position = UDim2.new(1, -156, 0.5, -16),
+            Size = UDim2.new(1, -32, 0, 40), Position = UDim2.fromOffset(16, 40),
             ZIndex = 1, Parent = Card,
-        }, { corner(R.Control) })
-        create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 22) }).Parent = Box
+        }, { corner(R.Control), stroke(Theme.Stroke, 1) })
+        create("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 30) }).Parent = Box
         create("TextLabel", {
-            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 14,
+            Text = "⌄", Font = Enum.Font.GothamBold, TextSize = 16,
             TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1, ZIndex = 1,
-            Position = UDim2.new(1, -20, 0, 0), Size = UDim2.fromOffset(18, 32),
+            Position = UDim2.new(1, -30, 0, 0), Size = UDim2.fromOffset(20, 40),
             Parent = Box,
         })
 
         local List = create("Frame", {
-            Size = UDim2.fromOffset(140, 0), Position = UDim2.new(1, -156, 0, 62),
+            Size = UDim2.new(1, -32, 0, 0), Position = UDim2.fromOffset(16, 84),
             BackgroundColor3 = Theme.CardHover, ClipsDescendants = true, ZIndex = 20, Parent = Card,
         }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
@@ -972,7 +969,7 @@ function Zentih:CreateTab(config)
         local rows = {}
 
         local function closeList()
-            tween(List, { Size = UDim2.fromOffset(140, 0) }, 0.12)
+            tween(List, { Size = UDim2.new(1, -32, 0, 0) }, 0.12)
         end
         registerPanel(closeList)
 
@@ -984,11 +981,15 @@ function Zentih:CreateTab(config)
                 if filter == "" or opt:lower():find(filter:lower(), 1, true) then
                     count = count + 1
                     local OptBtn = create("TextButton", {
-                        Text = opt, Font = Enum.Font.Gotham, TextSize = 12,
+                        Text = opt, Font = Enum.Font.Gotham, TextSize = 13,
                         TextColor3 = Theme.TextPrimary, AutoButtonColor = false,
-                        BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 30),
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 38),
                         LayoutOrder = i, ZIndex = 20, Parent = List,
                     })
+                    create("UIPadding", { PaddingLeft = UDim.new(0, 14) }).Parent = OptBtn
+                    OptBtn.MouseEnter:Connect(function() tween(OptBtn, { BackgroundColor3 = Theme.Card }) end)
+                    OptBtn.MouseLeave:Connect(function() tween(OptBtn, { BackgroundColor3 = Theme.CardHover }) end)
                     OptBtn.MouseButton1Click:Connect(function()
                         currentValue = opt
                         Box.Text = opt
@@ -998,18 +999,18 @@ function Zentih:CreateTab(config)
                     rows[#rows + 1] = OptBtn
                 end
             end
-            return math.min(count * 30, 150)
+            return math.min(count * 38, 190)
         end
         rebuildList("")
 
         Box.Focused:Connect(function()
             closeAllPanelsExcept(closeList)
             local h = rebuildList(Box.Text == default and "" or Box.Text)
-            tween(List, { Size = UDim2.fromOffset(140, h) }, 0.12)
+            tween(List, { Size = UDim2.new(1, -32, 0, h) }, 0.12)
         end)
         Box:GetPropertyChangedSignal("Text"):Connect(function()
             local h = rebuildList(Box.Text)
-            tween(List, { Size = UDim2.fromOffset(140, h) }, 0.12)
+            tween(List, { Size = UDim2.new(1, -32, 0, h) }, 0.12)
         end)
         Box.FocusLost:Connect(function()
             task.wait(0.15)
