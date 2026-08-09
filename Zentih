@@ -1,14 +1,18 @@
 --[[
-    Zentih UI Library v5 — rebuilt for reliability
+    Zentih UI Library v6
 
-    Sidebar tab buttons now use fixed Position (no UIListLayout on the
-    Sidebar) so nothing can silently fail to lay out. Everything else
-    keeps the same feature set: Sections, Labels, Dividers, Paragraphs,
-    Buttons (expandable), Toggles, Switches, Sliders, Progress Bars,
-    Dropdowns, Multi Dropdowns, Combo Boxes, Keybinds, Text Inputs,
-    Color Pickers, Notify(), Watermark, ShowLoading, Config Save/Load,
-    Destroy() with full connection cleanup, and the accordion behavior
-    for dropdown/colorpicker panels.
+    Changes in this pass:
+      - Removed the sidebar search box entirely.
+      - Main window background transparency set to 0.7 (70% see-through).
+      - Removed the single-letter icon shown before each tab name.
+      - Removed CreateSwitch — Toggle is now the only on/off control.
+
+    Remaining feature set: Sections, Labels, Dividers, Paragraphs,
+    Buttons (expandable), Toggles, Sliders, Progress Bars, Dropdowns,
+    Multi Dropdowns, Combo Boxes, Keybinds, Text Inputs, Color Pickers,
+    Notify(), Watermark, ShowLoading, Config Save/Load, Destroy() with
+    full connection cleanup, and the accordion behavior for dropdown/
+    colorpicker panels.
 ]]
 
 local UserInputService = game:GetService("UserInputService")
@@ -91,7 +95,7 @@ function Zentih:CreateWindow(config)
     local Main = create("Frame", {
         Name = "Main", Size = UDim2.fromOffset(800, 600),
         Position = UDim2.new(0.5, -400, 0.5, -300),
-        BackgroundColor3 = Theme.Background, BorderSizePixel = 0,
+        BackgroundColor3 = Theme.Background, BackgroundTransparency = 0.7, BorderSizePixel = 0,
         ClipsDescendants = true, Visible = true, ZIndex = 1,
         Parent = ScreenGui,
     }, { corner(R.Window), stroke(Theme.Stroke, 1) })
@@ -199,20 +203,7 @@ function Zentih:CreateWindow(config)
         BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, ZIndex = 2, Parent = Sidebar,
     })
 
-    local SearchWrap = create("Frame", {
-        Size = UDim2.new(1, -12, 0, 32), Position = UDim2.fromOffset(6, 14),
-        BackgroundColor3 = Theme.Card, ZIndex = 2, Parent = Sidebar,
-    }, { corner(R.Control), stroke(Theme.Stroke, 1) })
-    local SearchBox = create("TextBox", {
-        Text = "", PlaceholderText = "Search...",
-        Font = Enum.Font.Gotham, TextSize = 12,
-        TextColor3 = Theme.TextPrimary, PlaceholderColor3 = Theme.TextSecondary,
-        BackgroundTransparency = 1, ClearTextOnFocus = false,
-        Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0),
-        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2, Parent = SearchWrap,
-    })
-
-    local TAB_LIST_TOP = 60 -- y-offset where the first tab button starts, below the search box
+    local TAB_LIST_TOP = 14 -- y-offset where the first tab button starts
 
     --// Content
     local Content = create("Frame", {
@@ -238,13 +229,6 @@ function Zentih:CreateWindow(config)
         Tabs = {}, Flags = {}, _flagSetters = {}, _tabOrder = 0,
         _connections = Connections, _tabListTop = TAB_LIST_TOP,
     }, Zentih)
-
-    track(SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        local filter = SearchBox.Text:lower()
-        for _, t in ipairs(Window.Tabs) do
-            t.Button.Visible = (filter == "") or (t.Name:lower():find(filter, 1, true) ~= nil)
-        end
-    end))
 
     return Window
 end
@@ -426,17 +410,11 @@ function Zentih:CreateTab(config)
         BackgroundTransparency = 1, ZIndex = 3, Parent = TabButton,
     }, { corner(2) })
 
-    local IconLabel = create("TextLabel", {
-        Text = icon, Font = Enum.Font.GothamMedium, TextSize = 14,
-        TextColor3 = Theme.TextTab, BackgroundTransparency = 1, ZIndex = 3,
-        Position = UDim2.fromOffset(16, 0), Size = UDim2.fromOffset(20, 40),
-        Parent = TabButton,
-    })
     local Label = create("TextLabel", {
         Text = name, Font = Enum.Font.GothamMedium, TextSize = 14,
         TextColor3 = Theme.TextTab, TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1, ZIndex = 3, Position = UDim2.fromOffset(42, 0),
-        Size = UDim2.fromOffset(140, 40), Parent = TabButton,
+        BackgroundTransparency = 1, ZIndex = 3, Position = UDim2.fromOffset(16, 0),
+        Size = UDim2.fromOffset(160, 40), Parent = TabButton,
     })
 
     local Page = create("ScrollingFrame", {
@@ -456,7 +434,6 @@ function Zentih:CreateTab(config)
     local function setActive(active)
         tween(AccentBar, { BackgroundTransparency = active and 0 or 1 }, 0.15)
         tween(Label, { TextColor3 = active and Theme.TextTabActive or Theme.TextTab }, 0.15)
-        tween(IconLabel, { TextColor3 = active and Theme.Accent or Theme.TextTab }, 0.15)
         Label.Font = active and Enum.Font.GothamBold or Enum.Font.GothamMedium
         Page.Visible = active
     end
@@ -851,55 +828,6 @@ function Zentih:CreateTab(config)
         Box.FocusLost:Connect(function(enterPressed) callback(Box.Text, enterPressed) end)
         registerFlag(config.Flag, function() return Box.Text end, function(v) Box.Text = v end)
         return { Set = function(_, v) Box.Text = v end }
-    end
-
-    function Tab:CreateSwitch(config)
-        config = config or {}
-        local title, desc = config.Title or "Switch", config.Desc or ""
-        local default, callback = config.Default or false, config.Callback or function() end
-        self._order = self._order + 1
-        local Card = baseCard(self._order)
-        cardTexts(Card, title, desc, 66)
-
-        local Track = create("Frame", {
-            Size = UDim2.fromOffset(50, 26), Position = UDim2.new(1, -64, 0.5, -13),
-            BackgroundColor3 = default and Theme.Accent or Theme.ToggleOff, ZIndex = 1, Parent = Card,
-        }, { corner(13) })
-        local OnLabel = create("TextLabel", {
-            Text = "ON", Font = Enum.Font.GothamBold, TextSize = 9,
-            TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ZIndex = 1,
-            Position = UDim2.fromOffset(6, 0), Size = UDim2.fromOffset(20, 26),
-            TextTransparency = default and 0 or 1, Parent = Track,
-        })
-        local OffLabel = create("TextLabel", {
-            Text = "OFF", Font = Enum.Font.GothamBold, TextSize = 9,
-            TextColor3 = Theme.TextSecondary, BackgroundTransparency = 1, ZIndex = 1,
-            Position = UDim2.new(1, -26, 0, 0), Size = UDim2.fromOffset(22, 26),
-            TextTransparency = default and 1 or 0, Parent = Track,
-        })
-        local Knob = create("Frame", {
-            Size = UDim2.fromOffset(20, 20),
-            Position = default and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 3, 0.5, -10),
-            BackgroundColor3 = Theme.ToggleKnob, ZIndex = 1, Parent = Track,
-        }, { corner(R.Knob) })
-
-        local state = default
-        local function render()
-            tween(Track, { BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff }, 0.15)
-            tween(Knob, { Position = state and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 3, 0.5, -10) }, 0.15)
-            tween(OnLabel, { TextTransparency = state and 0 or 1 }, 0.15)
-            tween(OffLabel, { TextTransparency = state and 1 or 0 }, 0.15)
-        end
-
-        local ClickArea = create("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = Card })
-        ClickArea.MouseButton1Click:Connect(function()
-            state = not state
-            render()
-            callback(state)
-        end)
-
-        registerFlag(config.Flag, function() return state end, function(v) state = v; render(); callback(state) end)
-        return { Set = function(_, v) state = v; render(); callback(state) end, Get = function() return state end }
     end
 
     function Tab:CreateMultiDropdown(config)
