@@ -43,6 +43,7 @@ local Theme = {
 }
 
 local R = { Window = 10, TopChip = 7, CtrlBtn = 6, Card = 7, Control = 6, Knob = 999 }
+local PANEL_TRANSPARENCY = 0.33 -- dropdown/combobox/multidropdown list panels: Main (0.15) + 0.18
 
 local function create(class, props, children)
     local inst = Instance.new(class)
@@ -95,7 +96,7 @@ function Zentih:CreateWindow(config)
     local Main = create("Frame", {
         Name = "Main", Size = UDim2.fromOffset(800, 600),
         Position = UDim2.new(0.5, -400, 0.5, -300),
-        BackgroundColor3 = Theme.Background, BackgroundTransparency = 0.7, BorderSizePixel = 0,
+        BackgroundColor3 = Theme.Background, BackgroundTransparency = 0.15, BorderSizePixel = 0,
         ClipsDescendants = true, Visible = true, ZIndex = 1,
         Parent = ScreenGui,
     }, { corner(R.Window), stroke(Theme.Stroke, 1) })
@@ -705,7 +706,7 @@ function Zentih:CreateTab(config)
 
         local List = create("Frame", {
             Size = UDim2.new(1, -32, 0, 0), Position = UDim2.fromOffset(16, 84),
-            BackgroundColor3 = Theme.CardHover, ClipsDescendants = true, ZIndex = 20, Parent = Card,
+            BackgroundColor3 = Theme.CardHover, BackgroundTransparency = PANEL_TRANSPARENCY, ClipsDescendants = true, ZIndex = 20, Parent = Card,
         }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
 
@@ -722,6 +723,7 @@ function Zentih:CreateTab(config)
             tween(List, { Size = UDim2.new(1, -32, 0, target) }, 0.12)
         end
         registerPanel(close)
+        local optAccents = {}
         for i, opt in ipairs(options) do
             local OptBtn = create("TextButton", {
                 Text = opt, Font = Enum.Font.Gotham, TextSize = 13,
@@ -730,12 +732,22 @@ function Zentih:CreateTab(config)
                 BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 38),
                 LayoutOrder = i, ZIndex = 20, Parent = List,
             })
-            create("UIPadding", { PaddingLeft = UDim.new(0, 14) }).Parent = OptBtn
+            create("UIPadding", { PaddingLeft = UDim.new(0, 18) }).Parent = OptBtn
+            local Accent = create("Frame", {
+                Size = UDim2.new(0, 3, 0, 20), Position = UDim2.new(0, 0, 0.5, -10),
+                BackgroundColor3 = Theme.Accent, BorderSizePixel = 0,
+                BackgroundTransparency = opt == default and 0 or 1,
+                ZIndex = 20, Parent = OptBtn,
+            }, { corner(2) })
+            optAccents[opt] = Accent
             OptBtn.MouseEnter:Connect(function() tween(OptBtn, { BackgroundColor3 = Theme.Card }) end)
             OptBtn.MouseLeave:Connect(function() tween(OptBtn, { BackgroundColor3 = Theme.CardHover }) end)
             OptBtn.MouseButton1Click:Connect(function()
                 currentValue = opt
                 SelectedLabel.Text = opt
+                for o, bar in pairs(optAccents) do
+                    tween(bar, { BackgroundTransparency = (o == opt) and 0 or 1 }, 0.12)
+                end
                 close()
                 callback(opt)
             end)
@@ -858,7 +870,7 @@ function Zentih:CreateTab(config)
 
         local List = create("Frame", {
             Size = UDim2.new(1, -32, 0, 0), Position = UDim2.fromOffset(16, 84),
-            BackgroundColor3 = Theme.CardHover, ClipsDescendants = true, ZIndex = 20, Parent = Card,
+            BackgroundColor3 = Theme.CardHover, BackgroundTransparency = PANEL_TRANSPARENCY, ClipsDescendants = true, ZIndex = 20, Parent = Card,
         }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
 
@@ -883,19 +895,26 @@ function Zentih:CreateTab(config)
             })
             Row.MouseEnter:Connect(function() tween(Row, { BackgroundColor3 = Theme.Card }) end)
             Row.MouseLeave:Connect(function() tween(Row, { BackgroundColor3 = Theme.CardHover }) end)
+            local Accent = create("Frame", {
+                Size = UDim2.new(0, 3, 0, 20), Position = UDim2.new(0, 0, 0.5, -10),
+                BackgroundColor3 = Theme.Accent, BorderSizePixel = 0,
+                BackgroundTransparency = selected[opt] and 0 or 1,
+                ZIndex = 20, Parent = Row,
+            }, { corner(2) })
             local Check = create("Frame", {
-                Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(14, 11),
+                Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(18, 11),
                 BackgroundColor3 = selected[opt] and Theme.Accent or Theme.ToggleOff,
                 ZIndex = 20, Parent = Row,
             }, { corner(4) })
             create("TextLabel", {
                 Text = opt, Font = Enum.Font.Gotham, TextSize = 13,
                 TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
-                BackgroundTransparency = 1, ZIndex = 20, Position = UDim2.fromOffset(40, 0),
-                Size = UDim2.new(1, -44, 1, 0), Parent = Row,
+                BackgroundTransparency = 1, ZIndex = 20, Position = UDim2.fromOffset(44, 0),
+                Size = UDim2.new(1, -48, 1, 0), Parent = Row,
             })
             Row.MouseButton1Click:Connect(function()
                 selected[opt] = not selected[opt] or nil
+                tween(Accent, { BackgroundTransparency = selected[opt] and 0 or 1 }, 0.12)
                 Check.BackgroundColor3 = selected[opt] and Theme.Accent or Theme.ToggleOff
                 SelectedLabel.Text = selectedText()
                 local list = {}
@@ -961,7 +980,7 @@ function Zentih:CreateTab(config)
 
         local List = create("Frame", {
             Size = UDim2.new(1, -32, 0, 0), Position = UDim2.fromOffset(16, 84),
-            BackgroundColor3 = Theme.CardHover, ClipsDescendants = true, ZIndex = 20, Parent = Card,
+            BackgroundColor3 = Theme.CardHover, BackgroundTransparency = PANEL_TRANSPARENCY, ClipsDescendants = true, ZIndex = 20, Parent = Card,
         }, { corner(R.Control), stroke(Theme.Stroke, 1) })
         create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder }).Parent = List
 
@@ -987,7 +1006,13 @@ function Zentih:CreateTab(config)
                         BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 38),
                         LayoutOrder = i, ZIndex = 20, Parent = List,
                     })
-                    create("UIPadding", { PaddingLeft = UDim.new(0, 14) }).Parent = OptBtn
+                    create("UIPadding", { PaddingLeft = UDim.new(0, 18) }).Parent = OptBtn
+                    create("Frame", {
+                        Size = UDim2.new(0, 3, 0, 20), Position = UDim2.new(0, 0, 0.5, -10),
+                        BackgroundColor3 = Theme.Accent, BorderSizePixel = 0,
+                        BackgroundTransparency = (opt == currentValue) and 0 or 1,
+                        ZIndex = 20, Parent = OptBtn,
+                    }, { corner(2) })
                     OptBtn.MouseEnter:Connect(function() tween(OptBtn, { BackgroundColor3 = Theme.Card }) end)
                     OptBtn.MouseLeave:Connect(function() tween(OptBtn, { BackgroundColor3 = Theme.CardHover }) end)
                     OptBtn.MouseButton1Click:Connect(function()
